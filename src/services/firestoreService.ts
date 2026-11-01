@@ -390,7 +390,7 @@ export class FirestoreVendorService implements IVendorService {
   async updateQuoteStatus(
     eventId: string,
     quoteId: string,
-    status: 'review' | 'shortlisted' | 'rejected'
+    status: 'review' | 'shortlisted' | 'finalized' | 'rejected'
   ): Promise<void> {
     return this.updateQuote(eventId, quoteId, { status });
   }

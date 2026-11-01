@@ -40,6 +40,8 @@ export const VendorHubScreen: React.FC = () => {
     addVendorQuote,
     updateQuoteStatus,
     deleteVendorQuote,
+    finalizeVendorForCategory,
+    unfinalizeVendorForCategory,
     showToast,
   } = useApp();
 
@@ -80,7 +82,7 @@ export const VendorHubScreen: React.FC = () => {
     inclusionsText: 'Full royal buffet spread\nUniformed service staff\nLive chaat & beverage counter',
     exclusionsText: 'Midnight snack extension\nHard alcohol bar glassware',
     validityDate: '2026-12-31',
-    status: 'review' as 'review' | 'shortlisted' | 'rejected',
+    status: 'review' as 'review' | 'shortlisted' | 'finalized' | 'rejected',
     sourceType: 'USER_ENTERED' as 'USER_ENTERED' | 'DOCUMENT_EXTRACTED' | 'MODELLED_SAMPLE',
     sourceLabel: 'User-negotiated quotation',
     notes: 'Quotation verified with banquet coordinator',
@@ -240,7 +242,7 @@ export const VendorHubScreen: React.FC = () => {
   const compareCategories = [...standardCompareCategories, ...extraCompareCategories];
 
   const comparisonQuotes = vendorQuotes.filter(
-    (q) => (q.status === 'shortlisted' || q.status === 'review') && isCategoryMatch(q.category, compareCategory)
+    (q) => (q.status === 'finalized' || q.status === 'shortlisted' || q.status === 'review') && isCategoryMatch(q.category, compareCategory)
   );
 
   const getTradeoffEvaluation = (quotes: VendorQuote[], category: string) => {
@@ -539,11 +541,29 @@ export const VendorHubScreen: React.FC = () => {
 
           {/* Quotes Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredQuotes.map((q) => (
+            {filteredQuotes.map((q) => {
+              const isFinal = q.status === 'finalized';
+              return (
               <div
                 key={q.id}
-                className="p-5 bg-white border border-[#231530]/10 rounded-2xl shadow-xs space-y-4 hover:border-[#E06D28]/30 transition-all"
+                className={`p-5 bg-white border rounded-2xl shadow-xs space-y-4 transition-all ${
+                  isFinal
+                    ? 'border-2 border-emerald-500 bg-emerald-50/15 shadow-md ring-2 ring-emerald-500/20'
+                    : 'border-[#231530]/10 hover:border-[#E06D28]/30'
+                }`}
               >
+                {isFinal && (
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-xs">
+                    <div className="flex items-center gap-1.5">
+                      <Check className="w-4 h-4 text-emerald-200" />
+                      <span>FINAL SELECTED VENDOR (Agreed Contract)</span>
+                    </div>
+                    <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded font-mono">
+                      Committed to Budget
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-sm bg-neutral-100 text-[#231530]/70">
@@ -606,19 +626,48 @@ export const VendorHubScreen: React.FC = () => {
                 </div>
 
                 {/* Provenance and status bar */}
-                <div className="pt-2 border-t border-[#231530]/5 flex items-center justify-between text-xs">
+                <div className="pt-2 border-t border-[#231530]/5 flex flex-wrap items-center justify-between gap-2 text-xs">
                   <span className="text-[10px] text-[#231530]/50 italic">
                     {q.sourceLabel}
                   </span>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
+                    {isFinal ? (
+                      <button
+                        type="button"
+                        onClick={() => updateQuoteStatus(q.id, 'shortlisted')}
+                        className="px-2.5 py-1 bg-emerald-100 hover:bg-rose-50 text-emerald-900 hover:text-rose-700 border border-emerald-300 hover:border-rose-300 rounded-lg text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                        title="Click to remove final vendor status"
+                      >
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Finalized ✓</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => finalizeVendorForCategory(q.id)}
+                        className="px-2.5 py-1 bg-white hover:bg-emerald-50 text-[#231530] hover:text-emerald-900 border border-[#231530]/20 hover:border-emerald-400 rounded-lg text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+                        title="Mark this vendor as the final chosen vendor for this category"
+                      >
+                        <Check className="w-3.5 h-3.5 text-[#E06D28]" />
+                        <span>Select as Final</span>
+                      </button>
+                    )}
+
                     <select
                       value={q.status}
-                      onChange={(e) =>
-                        updateQuoteStatus(q.id, e.target.value as 'review' | 'shortlisted' | 'rejected')
-                      }
+                      onChange={(e) => {
+                        const val = e.target.value as any;
+                        if (val === 'finalized') {
+                          finalizeVendorForCategory(q.id);
+                        } else {
+                          updateQuoteStatus(q.id, val);
+                        }
+                      }}
                       className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border font-mono uppercase cursor-pointer ${
-                        q.status === 'shortlisted'
+                        q.status === 'finalized'
+                          ? 'bg-emerald-600 text-white border-emerald-700'
+                          : q.status === 'shortlisted'
                           ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                           : q.status === 'rejected'
                           ? 'bg-rose-100 text-rose-800 border-rose-300'
@@ -627,6 +676,7 @@ export const VendorHubScreen: React.FC = () => {
                     >
                       <option value="review">Review</option>
                       <option value="shortlisted">Shortlisted</option>
+                      <option value="finalized">Finalized</option>
                       <option value="rejected">Rejected</option>
                     </select>
 
@@ -640,7 +690,8 @@ export const VendorHubScreen: React.FC = () => {
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         </div>
       )}
@@ -673,7 +724,7 @@ export const VendorHubScreen: React.FC = () => {
                 {compareCategories.map((cat) => {
                   const count = vendorQuotes.filter(
                     (q) =>
-                      (q.status === 'shortlisted' || q.status === 'review') &&
+                      (q.status === 'finalized' || q.status === 'shortlisted' || q.status === 'review') &&
                       isCategoryMatch(q.category, cat)
                   ).length;
                   const isSelected = isCategoryMatch(compareCategory, cat);
@@ -757,14 +808,28 @@ export const VendorHubScreen: React.FC = () => {
                 <thead>
                   <tr className="border-b border-[#231530]/15 bg-[#FAF7F2] text-[#231530]/80">
                     <th className="p-3 font-semibold w-48">Comparison Metric</th>
-                    {comparisonQuotes.map((q) => (
-                      <th key={q.id} className="p-3 font-bold text-sm text-[#231530]">
-                        {q.vendorName}
-                        <div className="text-[11px] font-normal text-[#231530]/60">
-                          {q.category} · {q.city}
-                        </div>
-                      </th>
-                    ))}
+                    {comparisonQuotes.map((q) => {
+                      const isFinal = q.status === 'finalized';
+                      return (
+                        <th
+                          key={q.id}
+                          className={`p-3 font-bold text-sm text-[#231530] transition-colors ${
+                            isFinal ? 'bg-emerald-50/80 border-t-2 border-emerald-500' : ''
+                          }`}
+                        >
+                          {isFinal && (
+                            <span className="inline-flex items-center gap-1 mb-1.5 text-[10px] font-mono uppercase bg-emerald-600 text-white px-2 py-0.5 rounded font-bold shadow-2xs">
+                              <Check className="w-3 h-3 text-emerald-100" />
+                              <span>Final Selected Vendor</span>
+                            </span>
+                          )}
+                          <div className="font-display text-[#231530]">{q.vendorName}</div>
+                          <div className="text-[11px] font-normal text-[#231530]/60">
+                            {q.category} · {q.city}
+                          </div>
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#231530]/10">
@@ -774,7 +839,9 @@ export const VendorHubScreen: React.FC = () => {
                       <td key={q.id} className="p-3">
                         <span
                           className={`px-2 py-0.5 rounded-sm font-bold text-[10px] uppercase font-mono ${
-                            q.status === 'shortlisted'
+                            q.status === 'finalized'
+                              ? 'bg-emerald-600 text-white'
+                              : q.status === 'shortlisted'
                               ? 'bg-emerald-100 text-emerald-800'
                               : 'bg-amber-100 text-amber-800'
                           }`}
@@ -783,6 +850,32 @@ export const VendorHubScreen: React.FC = () => {
                         </span>
                       </td>
                     ))}
+                  </tr>
+                  <tr className="bg-[#FAF7F2]/40">
+                    <td className="p-3 font-semibold text-[#231530]">Procurement Decision</td>
+                    {comparisonQuotes.map((q) => {
+                      const isFinal = q.status === 'finalized';
+                      return (
+                        <td key={q.id} className="p-3">
+                          {isFinal ? (
+                            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-lg border border-emerald-300">
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Agreed Final Vendor</span>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => finalizeVendorForCategory(q.id)}
+                              className="px-3 py-1 bg-white hover:bg-emerald-50 border border-[#231530]/20 hover:border-emerald-500 text-xs font-semibold text-[#231530] hover:text-emerald-900 rounded-lg transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+                              title="Mark this vendor as the final agreed choice"
+                            >
+                              <Check className="w-3.5 h-3.5 text-[#E06D28]" />
+                              <span>Select as Final</span>
+                            </button>
+                          )}
+                        </td>
+                      );
+                    })}
                   </tr>
                   <tr>
                     <td className="p-3 font-semibold text-[#231530]">Base Unit Rate</td>
@@ -1041,6 +1134,7 @@ export const VendorHubScreen: React.FC = () => {
                   >
                     <option value="review">Review</option>
                     <option value="shortlisted">Shortlisted</option>
+                    <option value="finalized">Finalized (Agreed Contract)</option>
                     <option value="rejected">Rejected</option>
                   </select>
                 </div>

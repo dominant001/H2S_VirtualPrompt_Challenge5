@@ -175,7 +175,7 @@ export class MockVendorService implements IVendorService {
   async updateQuoteStatus(
     eventId: string,
     quoteId: string,
-    status: 'review' | 'shortlisted' | 'rejected'
+    status: 'review' | 'shortlisted' | 'finalized' | 'rejected'
   ): Promise<void> {
     this.quotes = this.quotes.map((q) => (q.id === quoteId ? { ...q, status } : q));
     this.notify(eventId);

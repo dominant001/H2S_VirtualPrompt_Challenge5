@@ -75,6 +75,10 @@ interface AppContextType {
   // Budget
   categories: BudgetCategory[];
   updateCategoryAllocated: (categoryId: string, amount: number) => Promise<void>;
+  updateCategory: (categoryId: string, updates: Partial<BudgetCategory>) => Promise<void>;
+  lockCategoryPayment: (categoryId: string, paidAmount: number, locked: boolean, notes?: string) => Promise<void>;
+  finalizeVendorForCategory: (vendorQuoteId: string, categoryId?: string) => Promise<void>;
+  unfinalizeVendorForCategory: (categoryId: string) => Promise<void>;
 
   // Tasks & Checklist
   tasks: TaskItem[];
@@ -97,7 +101,7 @@ interface AppContextType {
   addVendorQuote: (quote: Omit<VendorQuote, 'id' | 'totalCalculated'>) => Promise<void>;
   updateVendorQuote: (quote: VendorQuote) => Promise<void>;
   deleteVendorQuote: (quoteId: string) => Promise<void>;
-  updateQuoteStatus: (id: string, status: 'review' | 'shortlisted' | 'rejected') => Promise<void>;
+  updateQuoteStatus: (id: string, status: 'review' | 'shortlisted' | 'finalized' | 'rejected') => Promise<void>;
 
   // Team
   teamMembers: TeamMember[];
@@ -432,18 +436,135 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const updateCategoryAllocated = async (categoryId: string, amount: number) => {
+  const updateCategory = async (categoryId: string, updates: Partial<BudgetCategory>) => {
     if (isCloudActive) {
       try {
-        await firestoreBudget.updateCategory(activeEventId, categoryId, { allocated: amount });
+        await firestoreBudget.updateCategory(activeEventId, categoryId, updates);
       } catch (err: any) {
         showToast('Failed to update category in Firestore: ' + err.message, 'error');
       }
     } else {
       setLocalCategories((prev) =>
-        prev.map((cat) => (cat.id === categoryId ? { ...cat, allocated: amount } : cat))
+        prev.map((cat) => (cat.id === categoryId ? { ...cat, ...updates } : cat))
       );
     }
+  };
+
+  const updateCategoryAllocated = async (categoryId: string, amount: number) => {
+    const target = categories.find((c) => c.id === categoryId);
+    if (target?.isPaidLocked && amount < target.paid) {
+      showToast(
+        `Cannot reduce allocation below locked paid advance of ₹${target.paid.toLocaleString('en-IN')}. Please unlock advance payment first.`,
+        'warning'
+      );
+      return;
+    }
+    await updateCategory(categoryId, { allocated: amount });
+  };
+
+  const lockCategoryPayment = async (categoryId: string, paidAmount: number, locked: boolean, notes?: string) => {
+    const target = categories.find((c) => c.id === categoryId);
+    if (!target) return;
+
+    const updates: Partial<BudgetCategory> = {
+      paid: paidAmount,
+      isPaidLocked: locked,
+      paidLockedAt: locked ? new Date().toISOString() : undefined,
+      ...(notes !== undefined ? { advanceNotes: notes } : {}),
+    };
+
+    await updateCategory(categoryId, updates);
+    if (locked) {
+      const remaining = Math.max(0, target.allocated - paidAmount);
+      showToast(
+        `Locked advance payment of ₹${paidAmount.toLocaleString('en-IN')} for ${target.name}. Balance due: ₹${remaining.toLocaleString('en-IN')}.`,
+        'success'
+      );
+    } else {
+      showToast(`Advance payment unlocked for ${target.name}.`, 'info');
+    }
+  };
+
+  const finalizeVendorForCategory = async (vendorQuoteId: string, categoryId?: string) => {
+    const quote = vendorQuotes.find((q) => q.id === vendorQuoteId);
+    if (!quote) {
+      showToast('Vendor quote not found.', 'error');
+      return;
+    }
+
+    const targetCategory = categoryId
+      ? categories.find((c) => c.id === categoryId)
+      : categories.find((c) => {
+          const catLower = c.name.toLowerCase();
+          const qCatLower = quote.category.toLowerCase();
+          return (
+            catLower === qCatLower ||
+            catLower.includes(qCatLower) ||
+            qCatLower.includes(catLower) ||
+            (catLower.includes('photo') && qCatLower.includes('photo')) ||
+            (catLower.includes('cater') && qCatLower.includes('cater'))
+          );
+        });
+
+    if (isCloudActive) {
+      try {
+        await firestoreVendor.updateQuoteStatus(activeEventId, quote.id, 'finalized');
+        for (const other of vendorQuotes) {
+          if (
+            other.id !== quote.id &&
+            other.status === 'finalized' &&
+            other.category.toLowerCase() === quote.category.toLowerCase()
+          ) {
+            await firestoreVendor.updateQuoteStatus(activeEventId, other.id, 'shortlisted');
+          }
+        }
+      } catch (err: any) {
+        showToast('Failed to finalize quote in Cloud: ' + err.message, 'error');
+      }
+    } else {
+      setLocalVendorQuotes((prev) =>
+        prev.map((q) => {
+          if (q.id === quote.id) return { ...q, status: 'finalized' };
+          if (q.status === 'finalized' && q.category.toLowerCase() === quote.category.toLowerCase()) {
+            return { ...q, status: 'shortlisted' };
+          }
+          return q;
+        })
+      );
+    }
+
+    if (targetCategory) {
+      const updates: Partial<BudgetCategory> = {
+        selectedVendorId: quote.id,
+        selectedVendorName: quote.vendorName,
+        committed: quote.totalCalculated,
+        sourceType: 'contracted',
+        notes: `Final Vendor: ${quote.vendorName} (Agreed: ₹${quote.totalCalculated.toLocaleString('en-IN')}). Contract finalized.`,
+      };
+      await updateCategory(targetCategory.id, updates);
+      showToast(
+        `Finalized ${quote.vendorName} for ${targetCategory.name}! Budget committed to ₹${quote.totalCalculated.toLocaleString('en-IN')}.`,
+        'success'
+      );
+    } else {
+      showToast(`Finalized vendor "${quote.vendorName}".`, 'success');
+    }
+  };
+
+  const unfinalizeVendorForCategory = async (categoryId: string) => {
+    const targetCategory = categories.find((c) => c.id === categoryId);
+    if (!targetCategory) return;
+
+    if (targetCategory.selectedVendorId) {
+      await updateQuoteStatus(targetCategory.selectedVendorId, 'shortlisted');
+    }
+
+    await updateCategory(categoryId, {
+      selectedVendorId: undefined,
+      selectedVendorName: undefined,
+      sourceType: 'quoted',
+    });
+    showToast(`Removed final vendor selection for ${targetCategory.name}.`, 'info');
   };
 
   // Task methods
@@ -818,7 +939,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const updateQuoteStatus = async (id: string, status: 'review' | 'shortlisted' | 'rejected') => {
+  const updateQuoteStatus = async (id: string, status: 'review' | 'shortlisted' | 'finalized' | 'rejected') => {
     if (isCloudActive) {
       try {
         await firestoreVendor.updateQuoteStatus(activeEventId, id, status);
@@ -1082,6 +1203,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         seedSampleEventToCloud,
         categories,
         updateCategoryAllocated,
+        updateCategory,
+        lockCategoryPayment,
+        finalizeVendorForCategory,
+        unfinalizeVendorForCategory,
         tasks,
         toggleSubtask,
         updateTaskStatus,

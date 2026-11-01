@@ -126,10 +126,13 @@ export class PDFExportService {
       doc.text(cat.name.slice(0, 26), margin + 2, y + 4);
       doc.text(formatINR(cat.allocated), margin + 55, y + 4);
       doc.text(formatINR(cat.committedAmount ?? cat.committed ?? 0), margin + 85, y + 4);
-      doc.text(formatINR(cat.paidAmount ?? cat.paid ?? 0), margin + 115, y + 4);
+      const paidText = formatINR(cat.paidAmount ?? cat.paid ?? 0) + (cat.isPaidLocked ? ' (Locked)' : '');
+      doc.text(paidText, margin + 115, y + 4);
 
-      const src = cat.sourceType || 'MODELLED_SAMPLE';
-      doc.text(src.slice(0, 20), margin + 140, y + 4);
+      const src = cat.selectedVendorName
+        ? `CONTRACT: ${cat.selectedVendorName}`
+        : (cat.sourceType === 'modelled' ? 'BUDGET ESTIMATE' : cat.sourceType || 'BUDGET ESTIMATE');
+      doc.text(src.slice(0, 24), margin + 140, y + 4);
 
       doc.setDrawColor(245, 245, 245);
       doc.line(margin, y + 5.5, pageWidth - margin, y + 5.5);

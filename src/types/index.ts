@@ -120,9 +120,14 @@ export interface BudgetCategory {
   paid: number;
   committedAmount?: number;
   paidAmount?: number;
+  isPaidLocked?: boolean;
+  paidLockedAt?: string;
+  advanceNotes?: string;
+  selectedVendorId?: string;
+  selectedVendorName?: string;
   forecastFinal?: number;
   outstandingAmount?: number;
-  sourceType: PricingSourceType | 'modelled' | 'public' | 'quoted' | 'verified' | 'contracted';
+  sourceType: PricingSourceType | 'modelled' | 'public' | 'quoted' | 'verified' | 'contracted' | string;
   confidence: 'low' | 'medium' | 'high';
   pricingSourceIds?: string[];
   inclusions: string[];
@@ -222,7 +227,7 @@ export interface VendorQuote {
   minimumGuarantee?: number;
   deposits?: number;
   linkedBudgetCategoryId?: string;
-  status: 'review' | 'shortlisted' | 'rejected';
+  status: 'review' | 'shortlisted' | 'finalized' | 'rejected';
   sourceType?: 'USER_ENTERED' | 'MODELLED_SAMPLE' | 'DOCUMENT_EXTRACTED';
   sourceLabel: string;
   notes?: string;

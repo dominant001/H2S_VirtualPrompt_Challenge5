@@ -65,7 +65,7 @@ export interface IVendorService {
   updateQuoteStatus(
     eventId: string,
     quoteId: string,
-    status: 'review' | 'shortlisted' | 'rejected'
+    status: 'review' | 'shortlisted' | 'finalized' | 'rejected'
   ): Promise<void>;
   subscribeQuotes(
     eventId: string,
