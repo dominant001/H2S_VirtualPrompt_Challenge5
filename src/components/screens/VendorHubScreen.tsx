@@ -24,6 +24,7 @@ import {
   Layers,
   Trash2,
   Info,
+  Filter,
 } from 'lucide-react';
 import { PlacesVendorResult, QuoteExtractionCandidate, VendorQuote } from '../../types';
 import { vendorClient } from '../../services/vendorClient';
@@ -86,6 +87,7 @@ export const VendorHubScreen: React.FC = () => {
   });
 
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
+  const [compareCategory, setCompareCategory] = useState('Catering');
 
   // Load directory on initial mount
   useEffect(() => {
@@ -210,18 +212,52 @@ export const VendorHubScreen: React.FC = () => {
     }
   };
 
+  const isCategoryMatch = (quoteCat: string, filterCat: string) => {
+    if (!filterCat || filterCat.toLowerCase() === 'all') return true;
+    if (!quoteCat) return false;
+    const qc = quoteCat.toLowerCase().trim();
+    const fc = filterCat.toLowerCase().trim();
+    return (
+      qc === fc ||
+      qc.startsWith(fc) ||
+      fc.startsWith(qc) ||
+      (fc.includes('photo') && qc.includes('photo'))
+    );
+  };
+
   const categoriesList = ['all', 'Catering', 'Decor', 'Photography', 'Venue', 'Logistics'];
 
-  const filteredQuotes = vendorQuotes.filter((q) => {
-    if (selectedCategoryFilter !== 'all' && q.category.toLowerCase() !== selectedCategoryFilter.toLowerCase()) {
-      return false;
-    }
-    return true;
-  });
+  const filteredQuotes = vendorQuotes.filter((q) => isCategoryMatch(q.category, selectedCategoryFilter));
+
+  const standardCompareCategories = ['Catering', 'Decor', 'Photography', 'Venue', 'Logistics'];
+  const extraCompareCategories = Array.from(
+    new Set(
+      vendorQuotes
+        .map((q) => q.category)
+        .filter((cat) => cat && !standardCompareCategories.some((sc) => isCategoryMatch(cat, sc)))
+    )
+  );
+  const compareCategories = [...standardCompareCategories, ...extraCompareCategories];
 
   const comparisonQuotes = vendorQuotes.filter(
-    (q) => q.status === 'shortlisted' || q.status === 'review'
+    (q) => (q.status === 'shortlisted' || q.status === 'review') && isCategoryMatch(q.category, compareCategory)
   );
+
+  const getTradeoffEvaluation = (quotes: VendorQuote[], category: string) => {
+    if (quotes.length < 2) return '';
+    const sorted = [...quotes].sort((a, b) => a.totalCalculated - b.totalCalculated);
+    const lowest = sorted[0];
+    const highest = sorted[sorted.length - 1];
+    const diff = highest.totalCalculated - lowest.totalCalculated;
+
+    if (category.toLowerCase().includes('catering')) {
+      const lowestPerPlate = Math.round(lowest.totalCalculated / (lowest.quantity || 1));
+      const highestPerPlate = Math.round(highest.totalCalculated / (highest.quantity || 1));
+      return `Comparing shortlisted ${category} quotes reveals that ${lowest.vendorName} features a lower effective per-plate rate at ~₹${lowestPerPlate.toLocaleString('en-IN')}/pax (${formatINR(lowest.totalCalculated)} total for ${lowest.quantity} plates) with ${lowest.inclusions.length} listed inclusions. In contrast, ${highest.vendorName} offers premium package items at ~₹${highestPerPlate.toLocaleString('en-IN')}/pax (${formatINR(highest.totalCalculated)} total, variance: +${formatINR(diff)}). Confirm minimum guarantee headcounts (${lowest.minimumGuarantee || lowest.quantity} vs ${highest.minimumGuarantee || highest.quantity}) and live counter inclusions before signing binding addendums.`;
+    }
+
+    return `Comparing shortlisted ${category} quotes: ${lowest.vendorName} provides the most competitive package at ${formatINR(lowest.totalCalculated)} with ${lowest.inclusions.length} inclusions. ${highest.vendorName} offers extended scope at ${formatINR(highest.totalCalculated)} (variance: +${formatINR(diff)}). Evaluate specific inclusions against exclusions (e.g. equipment, overtime rates, permits) to determine true net value.`;
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
@@ -612,25 +648,108 @@ export const VendorHubScreen: React.FC = () => {
       {/* TAB 3: APPLES-TO-APPLES COMPARISON */}
       {hubTab === 'compare' && (
         <div className="bg-white border border-[#231530]/10 rounded-2xl p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="flex items-center justify-between border-b border-[#231530]/10 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#231530]/10 pb-4">
             <div>
               <h3 className="font-bold text-[#231530] font-display text-lg">
                 Apples-to-Apples Vendor Comparison Matrix
               </h3>
               <p className="text-xs text-[#231530]/60 mt-0.5">
-                Side-by-side audit of plate rates, taxes, hidden live counter surcharges, and service inclusion terms
+                Side-by-side audit of rates, taxes, hidden surcharges, and service inclusion terms within the same category
               </p>
             </div>
-            <span className="text-xs text-[#E06D28] font-semibold bg-[#E06D28]/10 px-3 py-1 rounded-full font-mono">
-              {comparisonQuotes.length} Quotes Active
+            <span className="text-xs text-[#E06D28] font-semibold bg-[#E06D28]/10 px-3 py-1 rounded-full font-mono self-start sm:self-auto">
+              {comparisonQuotes.length} Quotes Active ({compareCategory})
             </span>
           </div>
 
-          {comparisonQuotes.length < 2 ? (
-            <div className="p-8 text-center text-xs text-[#231530]/60 space-y-2">
+          {/* Category Filter on Top */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-[#FAF7F2] border border-[#231530]/10 rounded-xl">
+            <div className="flex items-center gap-2 overflow-x-auto">
+              <span className="text-xs font-semibold text-[#231530]/70 flex items-center gap-1.5 whitespace-nowrap">
+                <Filter className="w-3.5 h-3.5 text-[#E06D28]" />
+                Filter by Category:
+              </span>
+              <div className="flex items-center gap-1.5 text-xs">
+                {compareCategories.map((cat) => {
+                  const count = vendorQuotes.filter(
+                    (q) =>
+                      (q.status === 'shortlisted' || q.status === 'review') &&
+                      isCategoryMatch(q.category, cat)
+                  ).length;
+                  const isSelected = isCategoryMatch(compareCategory, cat);
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => setCompareCategory(cat)}
+                      className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5 ${
+                        isSelected
+                          ? 'bg-[#231530] text-white font-semibold shadow-xs'
+                          : 'bg-white border border-[#231530]/15 text-[#231530]/70 hover:text-[#231530] hover:bg-neutral-50'
+                      }`}
+                    >
+                      <span>{cat}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                          isSelected
+                            ? 'bg-white/20 text-white font-bold'
+                            : count > 0
+                            ? 'bg-[#E06D28]/10 text-[#E06D28] font-bold'
+                            : 'bg-neutral-100 text-neutral-400'
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <span className="text-xs text-[#231530]/60 whitespace-nowrap">
+              Comparing <strong>{comparisonQuotes.length}</strong> {compareCategory} quote{comparisonQuotes.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+
+          {comparisonQuotes.length === 0 ? (
+            <div className="p-8 text-center text-xs text-[#231530]/60 space-y-2.5">
               <Columns className="w-8 h-8 text-[#E06D28] mx-auto opacity-50" />
-              <div className="font-semibold text-sm text-[#231530]">Need At Least 2 Quotes for Comparison</div>
-              <div>Log or shortlist another vendor quote to activate the side-by-side comparison matrix.</div>
+              <div className="font-semibold text-sm text-[#231530]">
+                No Shortlisted or Review Quotes in {compareCategory}
+              </div>
+              <p className="max-w-md mx-auto">
+                Apples-to-apples comparison requires vendors in the same category. Log or shortlist vendor quotations in {compareCategory} to view side-by-side analysis.
+              </p>
+              <button
+                onClick={() => {
+                  setNewQuoteData((prev) => ({ ...prev, category: compareCategory }));
+                  setQuoteModalOpen(true);
+                }}
+                className="mt-2 px-3.5 py-2 bg-[#231530] text-white rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer hover:bg-[#231530]/90 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5 text-[#E06D28]" />
+                Log {compareCategory} Quote
+              </button>
+            </div>
+          ) : comparisonQuotes.length === 1 ? (
+            <div className="p-8 text-center text-xs text-[#231530]/60 space-y-2.5">
+              <Columns className="w-8 h-8 text-[#E06D28] mx-auto opacity-50" />
+              <div className="font-semibold text-sm text-[#231530]">
+                Need At Least 2 {compareCategory} Quotes for Comparison
+              </div>
+              <p className="max-w-md mx-auto">
+                Currently 1 quote is active in {compareCategory} (<strong>{comparisonQuotes[0].vendorName}</strong>).
+                Add or shortlist a second {compareCategory} quotation to unlock the direct side-by-side audit.
+              </p>
+              <button
+                onClick={() => {
+                  setNewQuoteData((prev) => ({ ...prev, category: compareCategory }));
+                  setQuoteModalOpen(true);
+                }}
+                className="mt-2 px-3.5 py-2 bg-[#231530] text-white rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer hover:bg-[#231530]/90 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5 text-[#E06D28]" />
+                Log Another {compareCategory} Quote
+              </button>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -706,10 +825,13 @@ export const VendorHubScreen: React.FC = () => {
                     ))}
                   </tr>
                   <tr>
-                    <td className="p-3 font-semibold text-[#231530]">Effective Rate / Plate</td>
+                    <td className="p-3 font-semibold text-[#231530]">
+                      {isCategoryMatch(compareCategory, 'Catering') ? 'Effective Rate / Plate' : 'Effective Unit Cost'}
+                    </td>
                     {comparisonQuotes.map((q) => (
                       <td key={q.id} className="p-3 font-mono font-bold text-neutral-800">
-                        ₹{Math.round(q.totalCalculated / (q.quantity || 1)).toLocaleString('en-IN')}/pax
+                        ₹{Math.round(q.totalCalculated / (q.quantity || 1)).toLocaleString('en-IN')}
+                        {isCategoryMatch(compareCategory, 'Catering') ? '/pax' : q.quantity > 1 ? ` (${q.quantity} units)` : ''}
                       </td>
                     ))}
                   </tr>
@@ -751,11 +873,11 @@ export const VendorHubScreen: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-indigo-700" />
                   <span className="font-bold text-xs uppercase tracking-wider text-indigo-950">
-                    Utsav AI Objective Tradeoff Evaluation:
+                    Utsav AI Objective Tradeoff Evaluation ({compareCategory}):
                   </span>
                 </div>
                 <p className="text-xs text-indigo-900/90 leading-relaxed">
-                  Comparing shortlisted quotes reveals that Maharaja Kitchens features a lower effective per-plate rate when factoring in live mocktail inclusions, but carries a strict 180-plate minimum headcount guarantee. In contrast, Gaurav Sweets offers lower advance deposit requirements with higher incremental plate penalties. Confirm headcount cutoffs before signing binding addendums.
+                  {getTradeoffEvaluation(comparisonQuotes, compareCategory)}
                 </p>
               </div>
             </div>
