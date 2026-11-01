@@ -1,0 +1,184 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Represents an authenticated user profile in the application.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "photoURL": { "type": "string", "maxLength": 1024 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "email"]
+    },
+    "Event": {
+      "title": "Celebration Event",
+      "description": "Represents a wedding, birthday, or community celebration plan.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 200 },
+        "type": { "type": "string", "enum": ["wedding", "birthday", "community"] },
+        "city": { "type": "string", "maxLength": 100 },
+        "state": { "type": "string", "maxLength": 100 },
+        "eventDate": { "type": "string" },
+        "guestCount": { "type": "number" },
+        "currency": { "type": "string", "maxLength": 10 },
+        "totalBudget": { "type": "number" },
+        "tier": { "type": "string", "enum": ["budget", "standard", "premium"] },
+        "foodPreference": { "type": "string", "enum": ["vegetarian", "non-veg", "jain", "mixed"] },
+        "functionCount": { "type": "number" },
+        "venueType": { "type": "string", "maxLength": 100 },
+        "accommodationNeeded": { "type": "boolean" },
+        "traditions": { "type": "array" },
+        "keyPriorities": { "type": "array" },
+        "version": { "type": "number" },
+        "schemaVersion": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "ownerId", "name", "type", "city", "guestCount", "totalBudget"]
+    },
+    "BudgetCategory": {
+      "title": "Budget Category",
+      "description": "Allocated budget category with expenditure tracking.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "eventId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 120 },
+        "allocated": { "type": "number" },
+        "estimatedLow": { "type": "number" },
+        "estimatedBase": { "type": "number" },
+        "estimatedHigh": { "type": "number" },
+        "committed": { "type": "number" },
+        "paid": { "type": "number" },
+        "sourceType": { "type": "string", "enum": ["modelled", "public", "quoted", "verified", "contracted"] },
+        "confidence": { "type": "string", "enum": ["low", "medium", "high"] },
+        "inclusions": { "type": "array" },
+        "exclusions": { "type": "array" },
+        "notes": { "type": "string", "maxLength": 1000 },
+        "isContingency": { "type": "boolean" },
+        "color": { "type": "string", "maxLength": 30 },
+        "icon": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "eventId", "name", "allocated"]
+    },
+    "Task": {
+      "title": "Checklist Task Item",
+      "description": "A hierarchical planning or execution task with subtasks.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "eventId": { "type": "string", "maxLength": 128 },
+        "categoryId": { "type": "string", "maxLength": 60 },
+        "categoryName": { "type": "string", "maxLength": 120 },
+        "subcategoryName": { "type": "string", "maxLength": 120 },
+        "title": { "type": "string", "maxLength": 240 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "status": { "type": "string", "enum": ["todo", "in_progress", "completed", "blocked"] },
+        "priority": { "type": "string", "enum": ["high", "medium", "low"] },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "ownerName": { "type": "string", "maxLength": 120 },
+        "ownerRole": { "type": "string", "maxLength": 120 },
+        "dueDate": { "type": "string" },
+        "relativeOffsetDays": { "type": "number" },
+        "dependsOnIds": { "type": "array" },
+        "estimatedCost": { "type": "number" },
+        "linkedBudgetCategoryId": { "type": "string", "maxLength": 128 },
+        "subtasks": { "type": "array" }
+      },
+      "required": ["id", "eventId", "title", "status", "priority"]
+    },
+    "VendorQuote": {
+      "title": "Vendor Quotation",
+      "description": "Logged vendor quote with unit rates, inclusions, and exclusions.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "vendorName": { "type": "string", "maxLength": 150 },
+        "category": { "type": "string", "maxLength": 100 },
+        "city": { "type": "string", "maxLength": 100 },
+        "rating": { "type": "number" },
+        "chargeBasis": { "type": "string", "maxLength": 100 },
+        "rate": { "type": "number" },
+        "quantity": { "type": "number" },
+        "taxes": { "type": "number" },
+        "extras": { "type": "number" },
+        "totalCalculated": { "type": "number" },
+        "inclusions": { "type": "array" },
+        "exclusions": { "type": "array" },
+        "validityDate": { "type": "string" },
+        "status": { "type": "string", "enum": ["review", "shortlisted", "rejected"] },
+        "sourceLabel": { "type": "string", "maxLength": 200 },
+        "notes": { "type": "string", "maxLength": 1000 }
+      },
+      "required": ["id", "vendorName", "category", "rate", "quantity", "totalCalculated"]
+    },
+    "ChangeProposal": {
+      "title": "Change Proposal",
+      "description": "Recorded impact analysis proposal for guest or budget changes.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "eventId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "impactSummary": { "type": "object" },
+        "affectedTaskTitles": { "type": "array" },
+        "resolutionType": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "applied": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "eventId", "title", "status", "applied"]
+    },
+    "EventMember": {
+      "title": "Event Member",
+      "description": "Role membership linking a user to a celebration event.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "eventId": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["owner", "planner", "viewer"] },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 120 },
+        "addedAt": { "type": "string" }
+      },
+      "required": ["userId", "eventId", "role"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile document."
+    },
+    "/events/{eventId}": {
+      "schema": "Event",
+      "description": "Celebration event top-level root document."
+    },
+    "/events/{eventId}/members/{userId}": {
+      "schema": "EventMember",
+      "description": "Member roles for this celebration event."
+    },
+    "/events/{eventId}/budgetCategories/{categoryId}": {
+      "schema": "BudgetCategory",
+      "description": "Allocated budget categories for this celebration event."
+    },
+    "/events/{eventId}/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Hierarchical checklist tasks and subtasks for this event."
+    },
+    "/events/{eventId}/quotes/{quoteId}": {
+      "schema": "VendorQuote",
+      "description": "Vendor quotations logged for this event."
+    },
+    "/events/{eventId}/changeProposals/{proposalId}": {
+      "schema": "ChangeProposal",
+      "description": "Audited change proposals and re-planning simulations."
+    }
+  }
+}

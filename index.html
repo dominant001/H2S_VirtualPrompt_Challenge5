@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      // Polyfill and resilience layer for browser sandbox & iframe environments
+      (function() {
+        try {
+          // 1. Guard AbortController.prototype.abort against extensions or environments throwing on cancelled streams
+          if (typeof AbortController !== 'undefined' && AbortController.prototype && AbortController.prototype.abort) {
+            var origAbort = AbortController.prototype.abort;
+            AbortController.prototype.abort = function(reason) {
+              try {
+                return origAbort.apply(this, arguments);
+              } catch (err) {
+                if (err && (
+                  err.name === 'AbortError' ||
+                  (err.message && err.message.indexOf('signal is aborted') !== -1) ||
+                  (err.message && err.message.indexOf('aborted without reason') !== -1)
+                )) {
+                  // Standard DOM abort() should not throw synchronously
+                  return;
+                }
+                throw err;
+              }
+            };
+          }
+
+          // 2. Prevent extension errors or expected stream abort rejections from crashing the UI
+          window.addEventListener('error', function(e) {
+            var msg = (e && e.message) || '';
+            var fn = (e && e.filename) || '';
+            var err = e && e.error;
+            var isAbort = (
+              msg.indexOf('signal is aborted') !== -1 ||
+              msg.indexOf('AbortError') !== -1 ||
+              msg.indexOf('aborted without reason') !== -1 ||
+              (err && (err.name === 'AbortError' || (err.message && err.message.indexOf('aborted without reason') !== -1)))
+            );
+            var isExt = fn.indexOf('chrome-extension://') !== -1 || (msg.indexOf('fetch') !== -1 && msg.indexOf('getter') !== -1);
+            if (isAbort || isExt) {
+              if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+              if (e.preventDefault) e.preventDefault();
+              return true;
+            }
+          }, true);
+
+          window.addEventListener('unhandledrejection', function(event) {
+            var reason = event && event.reason;
+            var msg = (reason && (reason.message || String(reason))) || '';
+            var name = reason && reason.name;
+            if (
+              name === 'AbortError' ||
+              msg.indexOf('signal is aborted') !== -1 ||
+              msg.indexOf('aborted without reason') !== -1 ||
+              msg.indexOf('Request was aborted') !== -1
+            ) {
+              event.preventDefault();
+              if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+              return true;
+            }
+          }, true);
+
+          // 3. Define getter and setter on Window.prototype & window.fetch
+          var rawFetch = window.fetch;
+          var curFetch = typeof rawFetch === 'function' ? rawFetch.bind(window) : rawFetch;
+
+          if (typeof Window !== 'undefined' && Window.prototype) {
+            try {
+              var protoDesc = Object.getOwnPropertyDescriptor(Window.prototype, 'fetch');
+              if (protoDesc && !protoDesc.set) {
+                Object.defineProperty(Window.prototype, 'fetch', {
+                  get: function() { return curFetch; },
+                  set: function(fn) { curFetch = fn; },
+                  configurable: true,
+                  enumerable: true
+                });
+              }
+            } catch (_) {}
+          }
+
+          Object.defineProperty(window, 'fetch', {
+            get: function() { return curFetch; },
+            set: function(fn) { curFetch = fn; },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (_) {}
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Utsav AI — You celebrate. We plan.</title>
+    <meta name="description" content="Intelligent planning copilot for Indian weddings, birthdays, and community events." />
+    <meta property="og:title" content="Utsav AI — You celebrate. We plan." />
+    <meta property="og:description" content="Intelligent planning copilot for Indian weddings, birthdays, and community events." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-[#FAF7F2] text-[#231530] antialiased selection:bg-[#E06D28]/20 selection:text-[#9A380E]">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
