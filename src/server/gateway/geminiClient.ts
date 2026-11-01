@@ -94,7 +94,7 @@ export class GeminiClient {
         simulated: false,
       };
     } catch (error: any) {
-      console.error('[GeminiClient] Error calling Gemini API:', error);
+      console.warn('[GeminiClient] Gemini API call notice:', error?.message || error);
       throw error;
     }
   }

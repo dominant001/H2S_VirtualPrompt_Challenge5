@@ -1,0 +1,8 @@
+{
+  "firestore": {
+    "databaseId": "ai-studio-utsavai-5ee2195d-5a01-4554-a806-a394a5166eee",
+    "rules": "firestore.rules",
+    "edition": "ENTERPRISE",
+    "dataAccessMode": "FIRESTORE_NATIVE"
+  }
+}

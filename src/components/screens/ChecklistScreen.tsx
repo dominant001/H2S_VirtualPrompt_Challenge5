@@ -26,7 +26,7 @@ import {
   ExternalLink,
   Coins,
 } from 'lucide-react';
-import { TaskItem, TaskPriority, TaskStatus } from '../../types';
+import { TaskItem, TaskPriority, TaskStatus, DirectoryType } from '../../types';
 import { ChecklistEngine } from '../../domain/checklistEngine';
 import { ChecklistClient } from '../../services/checklistClient';
 import { SuggestionResponse, AuditResponse, AuditIssue } from '../../server/checklist/checklistAdvisor';
@@ -45,6 +45,7 @@ export const ChecklistScreen: React.FC = () => {
     addMultipleTasks,
     deleteTask,
     setEventDate,
+    setCurrentTab,
     showToast,
   } = useApp();
   const { user, isDemoMode } = useAuth();
@@ -53,6 +54,7 @@ export const ChecklistScreen: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedOwner, setSelectedOwner] = useState<string>('all');
+  const [selectedDirectory, setSelectedDirectory] = useState<string>('all');
   const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({
     'task-groom-1': true,
     'task-groom-3': true,
@@ -72,6 +74,7 @@ export const ChecklistScreen: React.FC = () => {
     subcategoryName: 'Attire & Styling',
     priority: 'medium' as TaskPriority,
     ownerId: '',
+    directoryType: 'family' as DirectoryType,
     description: '',
     relativeOffsetDays: -15,
     estimatedCost: 0,
@@ -114,6 +117,11 @@ export const ChecklistScreen: React.FC = () => {
       if (!prereqs.isBlocked) return false;
     }
     if (selectedOwner !== 'all' && t.ownerId !== selectedOwner) return false;
+    if (selectedDirectory !== 'all') {
+      const ownerMember = teamMembers.find((m) => m.id === t.ownerId);
+      const taskDir = ownerMember?.directoryType || t.directoryType || 'family';
+      if (taskDir !== selectedDirectory) return false;
+    }
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase();
       const matchTitle = t.title.toLowerCase().includes(q);
@@ -310,6 +318,7 @@ export const ChecklistScreen: React.FC = () => {
       subcategoryName: 'Attire & Styling',
       priority: 'medium',
       ownerId: '',
+      directoryType: 'family',
       description: '',
       relativeOffsetDays: -15,
       estimatedCost: 0,
@@ -548,10 +557,23 @@ export const ChecklistScreen: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tasks, grooming microtasks, invitations, owners..."
+              placeholder="Search tasks, catering microtasks, food stalls, owners..."
               className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-[#FAF7F2] border border-[#231530]/15 rounded-xl focus:outline-hidden focus:border-[#E06D28]"
             />
           </div>
+
+          {/* Directory Filter */}
+          <select
+            value={selectedDirectory}
+            onChange={(e) => setSelectedDirectory(e.target.value)}
+            className="px-3 py-2 text-xs bg-[#FAF7F2] border border-[#231530]/15 rounded-xl focus:border-[#E06D28] font-medium"
+          >
+            <option value="all">All Member Directories</option>
+            <option value="family">Family Roster</option>
+            <option value="office">Office Colleagues</option>
+            <option value="community">Community & Society</option>
+            <option value="volunteers">Volunteers & Marshals</option>
+          </select>
 
           {/* Status filter */}
           <select
@@ -566,18 +588,33 @@ export const ChecklistScreen: React.FC = () => {
             <option value="high">High Priority Only</option>
           </select>
 
-          {/* Owner filter */}
+          {/* Owner filter grouped by directory */}
           <select
             value={selectedOwner}
             onChange={(e) => setSelectedOwner(e.target.value)}
             className="px-3 py-2 text-xs bg-[#FAF7F2] border border-[#231530]/15 rounded-xl focus:border-[#E06D28]"
           >
-            <option value="all">All Family Owners</option>
-            {teamMembers.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name} ({m.relation})
-              </option>
-            ))}
+            <option value="all">All Assigned Leads</option>
+            <optgroup label="Family Roster">
+              {teamMembers.filter((m) => m.directoryType === 'family').map((m) => (
+                <option key={m.id} value={m.id}>{m.name} ({m.relation})</option>
+              ))}
+            </optgroup>
+            <optgroup label="Office Colleagues">
+              {teamMembers.filter((m) => m.directoryType === 'office').map((m) => (
+                <option key={m.id} value={m.id}>{m.name} ({m.relation})</option>
+              ))}
+            </optgroup>
+            <optgroup label="Community & Society">
+              {teamMembers.filter((m) => m.directoryType === 'community').map((m) => (
+                <option key={m.id} value={m.id}>{m.name} ({m.relation})</option>
+              ))}
+            </optgroup>
+            <optgroup label="Volunteers & Marshals">
+              {teamMembers.filter((m) => m.directoryType === 'volunteers').map((m) => (
+                <option key={m.id} value={m.id}>{m.name} ({m.relation})</option>
+              ))}
+            </optgroup>
           </select>
         </div>
 
@@ -747,7 +784,28 @@ export const ChecklistScreen: React.FC = () => {
                             <span className="flex items-center gap-1">
                               <User className="w-3 h-3 text-[#E06D28]" />
                               <span className="font-medium text-[#231530]">
-                                {task.ownerName || 'Unassigned'}
+                                {task.ownerName ? (
+                                  <>
+                                    <span>{task.ownerName}</span>
+                                    {(() => {
+                                      const m = teamMembers.find((mem) => mem.id === task.ownerId);
+                                      const dir = m?.directoryType || task.directoryType || 'family';
+                                      const dirLabels: Record<string, string> = {
+                                        family: 'Family',
+                                        office: 'Office',
+                                        community: 'Community',
+                                        volunteers: 'Volunteer',
+                                      };
+                                      return (
+                                        <span className="ml-1 text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-xs bg-[#231530]/10 text-[#231530]/80 uppercase">
+                                          {dirLabels[dir] || dir}
+                                        </span>
+                                      );
+                                    })()}
+                                  </>
+                                ) : (
+                                  'Unassigned'
+                                )}
                               </span>
                             </span>
                             <span>·</span>
@@ -1212,22 +1270,71 @@ export const ChecklistScreen: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-[#231530] mb-1">
-                  Assign to Family Member
-                </label>
-                <select
-                  value={newTaskData.ownerId}
-                  onChange={(e) => setNewTaskData({ ...newTaskData, ownerId: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-[#FAF7F2] border border-[#231530]/15 rounded-xl focus:border-[#E06D28]"
-                >
-                  <option value="">Unassigned</option>
-                  {teamMembers.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} ({m.relation})
-                    </option>
-                  ))}
-                </select>
+              {/* Directory & Owner Assignment */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#231530] mb-1">
+                    Target Member Directory
+                  </label>
+                  <select
+                    value={newTaskData.directoryType}
+                    onChange={(e) =>
+                      setNewTaskData({
+                        ...newTaskData,
+                        directoryType: e.target.value as DirectoryType,
+                        ownerId: '', // Reset owner on directory change
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-[#FAF7F2] border border-[#231530]/15 rounded-xl focus:border-[#E06D28] font-medium"
+                  >
+                    <option value="family">Family Roster</option>
+                    <option value="office">Office Colleagues</option>
+                    <option value="community">Community Committee</option>
+                    <option value="volunteers">Volunteers &amp; Marshals</option>
+                  </select>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-[#231530]">
+                      Assign Task Owner
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewTaskModalOpen(false);
+                        setCurrentTab('team');
+                      }}
+                      className="text-[10px] text-[#E06D28] hover:underline font-semibold cursor-pointer"
+                    >
+                      + Invite Member
+                    </button>
+                  </div>
+                  <select
+                    value={newTaskData.ownerId}
+                    onChange={(e) => setNewTaskData({ ...newTaskData, ownerId: e.target.value })}
+                    className="w-full px-3 py-2 text-xs bg-[#FAF7F2] border border-[#231530]/15 rounded-xl focus:border-[#E06D28]"
+                  >
+                    <option value="">Unassigned</option>
+                    {/* Filter members by selected directoryType first */}
+                    {teamMembers.filter((m) => m.directoryType === newTaskData.directoryType).length > 0 ? (
+                      teamMembers
+                        .filter((m) => m.directoryType === newTaskData.directoryType)
+                        .map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name} ({m.relation})
+                          </option>
+                        ))
+                    ) : (
+                      /* Fallback to all members if none in specific directory */
+                      teamMembers.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name} ({m.relation})
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

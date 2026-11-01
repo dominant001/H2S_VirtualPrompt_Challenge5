@@ -102,6 +102,7 @@ interface AppContextType {
   // Team
   teamMembers: TeamMember[];
   updateTeamMember: (id: string, primaryResponsibilities: string[]) => void;
+  addTeamMember: (member: Omit<TeamMember, 'id'>) => void;
 
   // Copilot messages
   copilotMessages: CopilotMessage[];
@@ -852,6 +853,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Updated team responsibilities.', 'success');
   };
 
+  const addTeamMember = (memberData: Omit<TeamMember, 'id'>) => {
+    const newMember: TeamMember = {
+      ...memberData,
+      id: `tm-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    };
+    setTeamMembers((prev) => [...prev, newMember]);
+    showToast(`Added "${newMember.name}" to the ${newMember.directoryType.toUpperCase()} directory!`, 'success');
+  };
+
   // Copilot simulated message handler
   const sendCopilotMessage = (text: string) => {
     const userMsg: CopilotMessage = {
@@ -1102,6 +1112,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateQuoteStatus,
         teamMembers,
         updateTeamMember,
+        addTeamMember,
         copilotMessages,
         sendCopilotMessage,
         resetAllDemoData,

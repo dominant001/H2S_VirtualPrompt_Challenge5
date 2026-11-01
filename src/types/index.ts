@@ -178,6 +178,8 @@ export interface SubTask {
   completed: boolean;
 }
 
+export type DirectoryType = 'family' | 'office' | 'community' | 'volunteers';
+
 export interface TaskItem {
   id: string;
   eventId: string;
@@ -191,6 +193,7 @@ export interface TaskItem {
   ownerId?: string;
   ownerName?: string;
   ownerRole?: string;
+  directoryType?: DirectoryType;
   dueDate?: string; // e.g. YYYY-MM-DD
   relativeOffsetDays?: number; // e.g. -60 means T-60 days
   dependsOnIds: string[];
@@ -285,9 +288,14 @@ export interface TeamMember {
   id: string;
   name: string;
   relation: string;
+  directoryType: DirectoryType;
+  email?: string;
   phone?: string;
   avatarBg: string;
   primaryResponsibilities: string[];
+  status?: 'active' | 'invited';
+  invitedAt?: string;
+  invitedBy?: string;
 }
 
 export interface TaskModificationProposal {

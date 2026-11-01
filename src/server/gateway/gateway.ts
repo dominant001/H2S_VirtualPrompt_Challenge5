@@ -261,7 +261,13 @@ export class AIUsageGateway {
           });
 
           let friendlyError = genError.message || 'Upstream provider error';
-          if (friendlyError.includes('402') || friendlyError.includes('prepayment credits') || friendlyError.includes('depleted')) {
+          if (
+            friendlyError.includes('402') ||
+            friendlyError.includes('prepayment credits') ||
+            friendlyError.includes('depleted') ||
+            friendlyError.includes('prepay') ||
+            friendlyError.includes('billing')
+          ) {
             friendlyError = 'Gemini API credits depleted on attached Google Cloud project. Please check billing at https://ai.studio/projects or Secrets panel.';
           } else if (friendlyError.includes('429') || friendlyError.includes('RESOURCE_EXHAUSTED')) {
             friendlyError = 'Gemini API provider rate limit reached. Please retry in a moment.';
