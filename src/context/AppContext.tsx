@@ -170,30 +170,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const vendorQuotes = isCloudActive ? cloudVendorQuotes : localVendorQuotes;
   const proposals = isCloudActive ? cloudProposals : localProposals;
 
-  const activeEvent =
+  const rawActiveEvent =
     events.find((e) => e.id === activeEventId) ||
     events[0] ||
-    (isCloudActive
-      ? {
-          id: 'placeholder',
-          name: 'No Celebration Selected',
-          type: 'wedding' as const,
-          city: 'Jaipur',
-          state: 'Rajasthan',
-          guestCount: 0,
-          currency: 'INR',
-          totalBudget: 0,
-          tier: 'standard' as const,
-          foodPreference: 'vegetarian' as const,
-          functionCount: 1,
-          venueType: '',
-          accommodationNeeded: false,
-          traditions: [],
-          keyPriorities: [],
-          version: 1,
-          cateringModel: { chargeablePlates: 0, sampleRatePerPlate: 900, sampleExtras: 0 },
-        }
-      : INITIAL_EVENT);
+    INITIAL_EVENT;
+
+  const activeEvent: EventModel = {
+    ...INITIAL_EVENT,
+    ...rawActiveEvent,
+    cateringModel: {
+      ...INITIAL_EVENT.cateringModel,
+      ...(rawActiveEvent.cateringModel || {}),
+    },
+  };
 
   // Initial Copilot conversation seed
   const [copilotMessages, setCopilotMessages] = useState<CopilotMessage[]>([

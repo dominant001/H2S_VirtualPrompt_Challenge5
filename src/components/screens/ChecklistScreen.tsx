@@ -25,6 +25,7 @@ import {
   X,
   ExternalLink,
   Coins,
+  Users,
 } from 'lucide-react';
 import { TaskItem, TaskPriority, TaskStatus, DirectoryType } from '../../types';
 import { ChecklistEngine } from '../../domain/checklistEngine';
@@ -81,16 +82,35 @@ export const ChecklistScreen: React.FC = () => {
     linkedBudgetCategoryId: '',
   });
 
-  // AI Task Expansion Preview State
+  // AI Task Expansion Preview State & Assignees
   const [expansionLoading, setExpansionLoading] = useState(false);
   const [expansionModalOpen, setExpansionModalOpen] = useState(false);
   const [expansionData, setExpansionData] = useState<SuggestionResponse | null>(null);
   const [selectedCandidateIndices, setSelectedCandidateIndices] = useState<Record<number, boolean>>({});
+  const [candidateOwners, setCandidateOwners] = useState<Record<number, string>>({});
+  const [defaultExpansionOwnerId, setDefaultExpansionOwnerId] = useState<string>('');
 
-  // Checklist Audit State
+  // Checklist Audit State & Assignees
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditData, setAuditData] = useState<AuditResponse | null>(null);
   const [auditBannerDismissed, setAuditBannerDismissed] = useState(false);
+  const [auditIssueAssignees, setAuditIssueAssignees] = useState<Record<string, string>>({});
+
+  // Quick Inline Task Assignment
+  const handleQuickAssignOwner = async (taskId: string, newOwnerId: string) => {
+    const assignedMember = teamMembers.find((m) => m.id === newOwnerId);
+    await updateTask(taskId, {
+      ownerId: assignedMember ? assignedMember.id : undefined,
+      ownerName: assignedMember ? assignedMember.name : undefined,
+      ownerRole: assignedMember ? assignedMember.relation : undefined,
+      directoryType: assignedMember ? assignedMember.directoryType : undefined,
+    });
+    if (assignedMember) {
+      showToast(`Assigned to ${assignedMember.name} (${assignedMember.relation})`, 'info');
+    } else {
+      showToast('Task marked unassigned', 'info');
+    }
+  };
 
   // Dependency Management Modal State
   const [depModalTask, setDepModalTask] = useState<TaskItem | null>(null);
@@ -154,6 +174,8 @@ export const ChecklistScreen: React.FC = () => {
     setExpansionModalOpen(true);
     setExpansionData(null);
     setSelectedCandidateIndices({});
+    setCandidateOwners({});
+    setDefaultExpansionOwnerId('');
 
     try {
       const idToken = user ? await user.getIdToken().catch(() => undefined) : undefined;
@@ -189,9 +211,13 @@ export const ChecklistScreen: React.FC = () => {
   const handleImportSelectedAITasks = async () => {
     if (!expansionData) return;
 
-    const toAdd = expansionData.suggestions
-      .filter((_: any, idx: number) => selectedCandidateIndices[idx])
-      .map((s: any) => ({
+    const toAdd: any[] = [];
+    expansionData.suggestions.forEach((s: any, idx: number) => {
+      if (!selectedCandidateIndices[idx]) return;
+      const ownerId = candidateOwners[idx] !== undefined ? candidateOwners[idx] : defaultExpansionOwnerId;
+      const assignedMember = teamMembers.find((m) => m.id === ownerId);
+
+      toAdd.push({
         eventId: activeEvent.id,
         categoryId: expansionData.category.toLowerCase().replace(/[^a-z0-9]/g, '-'),
         categoryName: expansionData.category,
@@ -200,17 +226,22 @@ export const ChecklistScreen: React.FC = () => {
         description: s.description ? `${s.description} (Operational rationale: ${s.rationale})` : s.rationale,
         status: 'todo' as TaskStatus,
         priority: s.priority,
+        ownerId: assignedMember ? assignedMember.id : undefined,
+        ownerName: assignedMember ? assignedMember.name : undefined,
+        ownerRole: assignedMember ? assignedMember.relation : undefined,
+        directoryType: assignedMember ? assignedMember.directoryType : undefined,
         relativeOffsetDays: s.relativeOffsetDays,
         estimatedCost: s.estimatedCost,
         dependsOnIds: [],
         subtasks: [
           {
-            id: `st-init-${Date.now()}`,
+            id: `st-init-${Date.now()}-${idx}`,
             title: 'Initial vendor briefing & schedule lock',
             completed: false,
           },
         ],
-      }));
+      });
+    });
 
     if (toAdd.length === 0) {
       showToast('No tasks selected for import.', 'warning');
@@ -218,6 +249,13 @@ export const ChecklistScreen: React.FC = () => {
     }
 
     await addMultipleTasks(toAdd);
+    const assignedCount = toAdd.filter((t) => t.ownerId).length;
+    showToast(
+      assignedCount > 0
+        ? `Imported ${toAdd.length} AI microtasks (${assignedCount} assigned to team members).`
+        : `Imported ${toAdd.length} AI microtasks to checklist.`,
+      'success'
+    );
     setExpansionModalOpen(false);
     setExpansionData(null);
   };
@@ -249,7 +287,10 @@ export const ChecklistScreen: React.FC = () => {
   };
 
   // Add Task recommended by Audit
-  const handleAddAuditRecommendedTask = async (issue: AuditIssue) => {
+  const handleAddAuditRecommendedTask = async (issue: AuditIssue, assignedOwnerId?: string) => {
+    const ownerIdToUse = assignedOwnerId || auditIssueAssignees[issue.id];
+    const assignedMember = teamMembers.find((m) => m.id === ownerIdToUse);
+
     await addTask({
       eventId: activeEvent.id,
       categoryId: issue.category.toLowerCase().replace(/[^a-z0-9]/g, '-'),
@@ -259,6 +300,10 @@ export const ChecklistScreen: React.FC = () => {
       description: `${issue.description} Recommendation: ${issue.recommendation}`,
       status: 'todo',
       priority: issue.severity === 'critical' ? 'high' : 'medium',
+      ownerId: assignedMember ? assignedMember.id : undefined,
+      ownerName: assignedMember ? assignedMember.name : undefined,
+      ownerRole: assignedMember ? assignedMember.relation : undefined,
+      directoryType: assignedMember ? assignedMember.directoryType : undefined,
       relativeOffsetDays: -14,
       dependsOnIds: [],
       subtasks: [
@@ -277,6 +322,12 @@ export const ChecklistScreen: React.FC = () => {
         totalIssues: auditData.totalIssues - 1,
       });
     }
+    showToast(
+      assignedMember
+        ? `Added safeguard task assigned to ${assignedMember.name}.`
+        : 'Added safeguard task to checklist.',
+      'success'
+    );
   };
 
   // Create Task Form Handler
@@ -530,10 +581,37 @@ export const ChecklistScreen: React.FC = () => {
                   <p className="text-[11px] text-indigo-200/90 mt-1 leading-relaxed">{issue.description}</p>
                 </div>
 
-                <div className="pt-2 border-t border-indigo-800/60 flex items-center justify-between gap-2">
-                  <span className="text-[10px] text-indigo-300 truncate max-w-[200px]" title={issue.recommendation}>
-                    {issue.recommendation}
-                  </span>
+                <div className="pt-2 border-t border-indigo-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    <User className="w-3 h-3 text-amber-400 shrink-0" />
+                    <select
+                      value={auditIssueAssignees[issue.id] || ''}
+                      onChange={(e) => setAuditIssueAssignees((prev) => ({ ...prev, [issue.id]: e.target.value }))}
+                      className="bg-indigo-950/80 border border-indigo-700 text-indigo-100 text-[10px] rounded-lg px-2 py-1 max-w-[170px] truncate cursor-pointer"
+                    >
+                      <option value="">Assign Lead...</option>
+                      <optgroup label="Family Roster">
+                        {teamMembers.filter((m) => m.directoryType === 'family').map((m) => (
+                          <option key={m.id} value={m.id}>{m.name} ({m.relation})</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Office Colleagues">
+                        {teamMembers.filter((m) => m.directoryType === 'office').map((m) => (
+                          <option key={m.id} value={m.id}>{m.name} ({m.relation})</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Community & Society">
+                        {teamMembers.filter((m) => m.directoryType === 'community').map((m) => (
+                          <option key={m.id} value={m.id}>{m.name} ({m.relation})</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Volunteers & Marshals">
+                        {teamMembers.filter((m) => m.directoryType === 'volunteers').map((m) => (
+                          <option key={m.id} value={m.id}>{m.name} ({m.relation})</option>
+                        ))}
+                      </optgroup>
+                    </select>
+                  </div>
                   <button
                     onClick={() => handleAddAuditRecommendedTask(issue)}
                     className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-[#231530] text-[10px] font-bold rounded-lg transition-colors shrink-0 cursor-pointer"
@@ -781,32 +859,50 @@ export const ChecklistScreen: React.FC = () => {
                           <div className="flex flex-wrap items-center gap-2.5 text-xs text-[#231530]/60 mt-2">
                             <span className="font-medium text-[#231530]/80">{task.categoryName}</span>
                             <span>·</span>
-                            <span className="flex items-center gap-1">
-                              <User className="w-3 h-3 text-[#E06D28]" />
-                              <span className="font-medium text-[#231530]">
-                                {task.ownerName ? (
-                                  <>
-                                    <span>{task.ownerName}</span>
-                                    {(() => {
-                                      const m = teamMembers.find((mem) => mem.id === task.ownerId);
-                                      const dir = m?.directoryType || task.directoryType || 'family';
-                                      const dirLabels: Record<string, string> = {
-                                        family: 'Family',
-                                        office: 'Office',
-                                        community: 'Community',
-                                        volunteers: 'Volunteer',
-                                      };
-                                      return (
-                                        <span className="ml-1 text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-xs bg-[#231530]/10 text-[#231530]/80 uppercase">
-                                          {dirLabels[dir] || dir}
-                                        </span>
-                                      );
-                                    })()}
-                                  </>
-                                ) : (
-                                  'Unassigned'
-                                )}
-                              </span>
+                            <span className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                              <User className="w-3.5 h-3.5 text-[#E06D28] shrink-0" />
+                              <select
+                                value={task.ownerId || ''}
+                                onChange={(e) => handleQuickAssignOwner(task.id, e.target.value)}
+                                className="text-xs font-medium text-[#231530] bg-[#FAF7F2] border border-[#231530]/15 hover:border-[#E06D28]/40 rounded-lg px-2 py-0.5 focus:outline-hidden focus:border-[#E06D28] cursor-pointer"
+                                title="Assign task to team member"
+                              >
+                                <option value="">Unassigned</option>
+                                {['family', 'office', 'community', 'volunteers'].map((dirKey) => {
+                                  const dirMembers = teamMembers.filter((m) => (m.directoryType || 'family') === dirKey);
+                                  if (dirMembers.length === 0) return null;
+                                  const groupLabels: Record<string, string> = {
+                                    family: 'Family Roster',
+                                    office: 'Office Colleagues',
+                                    community: 'Community & Society',
+                                    volunteers: 'Volunteers & Marshals',
+                                  };
+                                  return (
+                                    <optgroup key={dirKey} label={groupLabels[dirKey] || dirKey}>
+                                      {dirMembers.map((m) => (
+                                        <option key={m.id} value={m.id}>
+                                          {m.name} ({m.relation})
+                                        </option>
+                                      ))}
+                                    </optgroup>
+                                  );
+                                })}
+                              </select>
+                              {task.ownerId && (() => {
+                                const m = teamMembers.find((mem) => mem.id === task.ownerId);
+                                const dir = m?.directoryType || task.directoryType || 'family';
+                                const dirLabels: Record<string, string> = {
+                                  family: 'Family',
+                                  office: 'Office',
+                                  community: 'Community',
+                                  volunteers: 'Volunteer',
+                                };
+                                return (
+                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-xs bg-[#231530]/10 text-[#231530]/80 uppercase">
+                                    {dirLabels[dir] || dir}
+                                  </span>
+                                );
+                              })()}
                             </span>
                             <span>·</span>
                             {/* Date / Milestone Display */}
@@ -964,6 +1060,40 @@ export const ChecklistScreen: React.FC = () => {
                     )}
                   </div>
 
+                  {/* Batch Assignee Control */}
+                  <div className="p-3 bg-[#FAF7F2] border border-[#231530]/10 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-[#E06D28]" />
+                      <span className="font-semibold text-[#231530]">Default Assignee for Selected Tasks:</span>
+                    </div>
+                    <select
+                      value={defaultExpansionOwnerId}
+                      onChange={(e) => setDefaultExpansionOwnerId(e.target.value)}
+                      className="px-3 py-1.5 bg-white border border-[#231530]/15 rounded-xl text-xs text-[#231530] font-medium focus:border-[#E06D28] focus:outline-hidden cursor-pointer"
+                    >
+                      <option value="">Leave Unassigned (or customize below)</option>
+                      {['family', 'office', 'community', 'volunteers'].map((dirKey) => {
+                        const dirMembers = teamMembers.filter((m) => (m.directoryType || 'family') === dirKey);
+                        if (dirMembers.length === 0) return null;
+                        const groupLabels: Record<string, string> = {
+                          family: 'Family Roster',
+                          office: 'Office Colleagues',
+                          community: 'Community & Society',
+                          volunteers: 'Volunteers & Marshals',
+                        };
+                        return (
+                          <optgroup key={dirKey} label={groupLabels[dirKey] || dirKey}>
+                            {dirMembers.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.name} ({m.relation})
+                              </option>
+                            ))}
+                          </optgroup>
+                        );
+                      })}
+                    </select>
+                  </div>
+
                   {/* Candidate List */}
                   <div className="space-y-3">
                     {expansionData.suggestions.map((cand: any, idx: number) => {
@@ -1015,6 +1145,53 @@ export const ChecklistScreen: React.FC = () => {
                                   <strong>Operational Rationale:</strong> {cand.rationale}
                                 </p>
                               )}
+
+                              {/* Task Assignee Dropdown */}
+                              <div
+                                className="mt-3 pt-2.5 border-t border-[#231530]/10 flex flex-wrap items-center justify-between gap-2"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="flex items-center gap-1.5 text-xs text-[#231530]/70">
+                                  <User className="w-3.5 h-3.5 text-[#E06D28]" />
+                                  <span className="font-medium text-[#231530]/80">Assign to:</span>
+                                </div>
+                                <select
+                                  value={
+                                    candidateOwners[idx] !== undefined
+                                      ? candidateOwners[idx]
+                                      : defaultExpansionOwnerId
+                                  }
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    setCandidateOwners((prev) => ({ ...prev, [idx]: e.target.value }));
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="px-2.5 py-1 text-xs bg-white border border-[#231530]/15 rounded-lg text-[#231530] font-medium focus:border-[#E06D28] focus:outline-hidden cursor-pointer"
+                                >
+                                  <option value="">Unassigned</option>
+                                  {['family', 'office', 'community', 'volunteers'].map((dirKey) => {
+                                    const dirMembers = teamMembers.filter(
+                                      (m) => (m.directoryType || 'family') === dirKey
+                                    );
+                                    if (dirMembers.length === 0) return null;
+                                    const groupLabels: Record<string, string> = {
+                                      family: 'Family Roster',
+                                      office: 'Office Colleagues',
+                                      community: 'Community & Society',
+                                      volunteers: 'Volunteers & Marshals',
+                                    };
+                                    return (
+                                      <optgroup key={dirKey} label={groupLabels[dirKey] || dirKey}>
+                                        {dirMembers.map((m) => (
+                                          <option key={m.id} value={m.id}>
+                                            {m.name} ({m.relation})
+                                          </option>
+                                        ))}
+                                      </optgroup>
+                                    );
+                                  })}
+                                </select>
+                              </div>
                             </div>
                           </div>
                         </div>

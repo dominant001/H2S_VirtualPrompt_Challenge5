@@ -82,7 +82,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-amber-400" />
               <span>
-                <strong className="text-white font-semibold">Active Session:</strong> Managing {activeEvent.name} ({activeEvent.type.charAt(0).toUpperCase() + activeEvent.type.slice(1)}) · Real-time Planning
+                <strong className="text-white font-semibold">Active Session:</strong> Managing {activeEvent?.name || 'Celebration'} ({(activeEvent?.type || 'wedding').charAt(0).toUpperCase() + (activeEvent?.type || 'wedding').slice(1)}) · Real-time Planning
               </span>
               {!user && (
                 <button
@@ -162,8 +162,8 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                       isDemoMode ? 'bg-amber-500' : 'bg-emerald-500'
                     }`}
                   />
-                  <span className="font-semibold max-w-[100px] sm:max-w-[140px] truncate">{activeEvent.name}</span>
-                  <span className="hidden sm:inline-block text-[#231530]/50 text-[11px] shrink-0">({activeEvent.city})</span>
+                  <span className="font-semibold max-w-[100px] sm:max-w-[140px] truncate">{activeEvent?.name || 'Celebration'}</span>
+                  <span className="hidden sm:inline-block text-[#231530]/50 text-[11px] shrink-0">({activeEvent?.city || 'India'})</span>
                   <ChevronDown className="w-3.5 h-3.5 text-[#231530]/50 shrink-0" />
                 </button>
 
@@ -353,9 +353,9 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
 
             {/* Quick Context Tag on Large Screens */}
             <div className="hidden 2xl:flex items-center gap-2 text-[11px] text-[#231530]/50 shrink-0 pl-2">
-              <span className="font-mono font-medium text-[#231530]/70">{formatINRCompact(activeEvent.totalBudget)} Budget</span>
+              <span className="font-mono font-medium text-[#231530]/70">{formatINRCompact(activeEvent?.totalBudget || 0)} Budget</span>
               <span>·</span>
-              <span>{activeEvent.guestCount} Guests</span>
+              <span>{activeEvent?.guestCount || 0} Guests</span>
             </div>
           </div>
         </div>

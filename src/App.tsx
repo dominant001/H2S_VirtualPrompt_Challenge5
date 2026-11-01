@@ -7,6 +7,7 @@ import React from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { AppProvider, useApp } from './context/AppContext';
 import { AppLayout } from './components/layout/AppLayout';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { LandingScreen } from './components/screens/LandingScreen';
 import { DashboardScreen } from './components/screens/DashboardScreen';
 import { BudgetStudioScreen } from './components/screens/BudgetStudioScreen';
@@ -49,12 +50,16 @@ const MainRouter: React.FC = () => {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppProvider>
-        <AppLayout>
-          <MainRouter />
-        </AppLayout>
-      </AppProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppProvider>
+          <AppLayout>
+            <ErrorBoundary>
+              <MainRouter />
+            </ErrorBoundary>
+          </AppLayout>
+        </AppProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
