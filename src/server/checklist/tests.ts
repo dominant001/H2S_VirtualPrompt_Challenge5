@@ -9,7 +9,7 @@ export interface Phase5TestResult {
   name: string;
   passed: boolean;
   details: string;
-  data?: any;
+  data?: unknown;
 }
 
 export interface Phase5Report {
@@ -74,12 +74,12 @@ export async function runChecklistTestSuite(): Promise<Phase5Report> {
         subcategories: Array.from(new Set(groomTasks.map((t) => t.subcategoryName))),
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'TEST_A_GROOM_GRANULARITY',
       name: 'Test A: Groom Group Granularity & Microtasks',
       passed: false,
-      details: 'Exception: ' + err.message,
+      details: 'Exception: ' + (err instanceof Error ? err.message : String(err)),
     });
   }
 
@@ -124,12 +124,12 @@ export async function runChecklistTestSuite(): Promise<Phase5Report> {
         updated: updatedProgress,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'TEST_B_LEAF_PROGRESS_ROLLUP',
       name: 'Test B: Leaf Task Completion & Progress Roll-up',
       passed: false,
-      details: 'Exception: ' + err.message,
+      details: 'Exception: ' + (err instanceof Error ? err.message : String(err)),
     });
   }
 
@@ -178,12 +178,12 @@ export async function runChecklistTestSuite(): Promise<Phase5Report> {
         inv5Blocked: inv5Prereqs.isBlocked,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'TEST_C_INVITATION_DEPENDENCIES',
       name: 'Test C: Invitation Dependency Chain & Cycle Rejection',
       passed: false,
-      details: 'Exception: ' + err.message,
+      details: 'Exception: ' + (err instanceof Error ? err.message : String(err)),
     });
   }
 
@@ -223,12 +223,12 @@ export async function runChecklistTestSuite(): Promise<Phase5Report> {
         confirmedOutput: confirmedDateResult.formattedDisplay,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'TEST_D_DATE_UNCERTAINTY',
       name: 'Test D: Date Uncertainty & Asia/Kolkata Relative Milestones',
       passed: false,
-      details: 'Exception: ' + err.message,
+      details: 'Exception: ' + (err instanceof Error ? err.message : String(err)),
     });
   }
 
@@ -272,12 +272,12 @@ export async function runChecklistTestSuite(): Promise<Phase5Report> {
         dedupeWorking: dedupePassed,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'TEST_E_EXPANSION_PREVIEW',
       name: 'Test E: Gemini Expansion Preview & Deduplication',
       passed: false,
-      details: 'Exception: ' + err.message,
+      details: 'Exception: ' + (err instanceof Error ? err.message : String(err)),
     });
   }
 
@@ -320,12 +320,12 @@ export async function runChecklistTestSuite(): Promise<Phase5Report> {
         communityCount: communityTasks.length,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'TEST_F_MULTI_EVENT_TEMPLATES',
       name: 'Test F: Multi-Event Pack Templates (Wedding, Birthday, Community)',
       passed: false,
-      details: 'Exception: ' + err.message,
+      details: 'Exception: ' + (err instanceof Error ? err.message : String(err)),
     });
   }
 
@@ -372,12 +372,12 @@ export async function runChecklistTestSuite(): Promise<Phase5Report> {
         demoAllowed: demoModeCheck.allowed,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'TEST_G_ROLE_ACCESS_SECURITY',
       name: 'Test G: Role & Access Permission Enforcement',
       passed: false,
-      details: 'Exception: ' + err.message,
+      details: 'Exception: ' + (err instanceof Error ? err.message : String(err)),
     });
   }
 

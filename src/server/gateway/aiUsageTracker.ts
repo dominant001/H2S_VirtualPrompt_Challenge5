@@ -65,7 +65,7 @@ export class AIUsageTracker {
       m.totalTokens += log.inputTokens + log.outputTokens;
     }
 
-    const result: any = {};
+    const result: Record<string, { count: number; totalCostUsd: number; totalTokens: number; successRate: number }> = {};
     for (const [w, m] of Object.entries(metrics)) {
       result[w] = {
         count: m.count,

@@ -180,8 +180,9 @@ export const InspirationStudioScreen: React.FC = () => {
       );
       setInvitationCopy(generated);
       showToast('Generated culturally customized invitation copy!', 'success');
-    } catch (err: any) {
-      showToast('Could not generate copy: ' + err.message, 'warning');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast('Could not generate copy: ' + message, 'warning');
     } finally {
       setIsGeneratingCopy(false);
     }
@@ -192,8 +193,9 @@ export const InspirationStudioScreen: React.FC = () => {
       const proposal = await vendorClient.generateSponsorProposal(activeEvent);
       setSponsorProposal(proposal);
       showToast('Generated community sponsorship proposal draft!', 'success');
-    } catch (err: any) {
-      showToast('Could not generate proposal: ' + err.message, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast('Could not generate proposal: ' + message, 'error');
     }
   };
 
@@ -207,8 +209,9 @@ export const InspirationStudioScreen: React.FC = () => {
         teamMembers
       );
       showToast('Master event brief PDF downloaded successfully!', 'success');
-    } catch (err: any) {
-      showToast('Could not generate PDF: ' + err.message, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast('Could not generate PDF: ' + message, 'error');
     }
   };
 
@@ -719,7 +722,7 @@ export const InspirationStudioScreen: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {sponsorProposal.proposedTiers.map((tier: any, idx: number) => (
+              {sponsorProposal.proposedTiers.map((tier: { tierName: string; contributionINR: number; deliverableSummary?: string[]; entitlements: string[]; disclaimer: string }, idx: number) => (
                 <div key={idx} className="p-3 bg-white rounded-lg border border-indigo-100 space-y-2">
                   <div className="flex justify-between items-start">
                     <span className="font-semibold text-[#231530]">{tier.tierName}</span>

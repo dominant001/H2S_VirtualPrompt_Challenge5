@@ -74,7 +74,7 @@ export class TokenBudgetService {
    * otherwise falls back to estimated calculation.
    */
   public extractUsageReport(
-    geminiResponse: any,
+    geminiResponse: { usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; totalTokenCount?: number } } | null | undefined,
     prompt: string,
     outputText: string
   ): TokenUsageReport {

@@ -38,7 +38,7 @@ export class EventArchitectClient {
       }
 
       return await res.json();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn('[EventArchitectClient] Network or server error, providing client fallback:', err);
       // Client-side fallback if server is unreachable
       const latestMsg = messages[messages.length - 1]?.content || '';

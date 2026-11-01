@@ -37,6 +37,9 @@ import {
   MockVendorService,
 } from '../services/mockService';
 import { aiGatewayClient } from '../services/aiGatewayClient';
+import { getErrorMessage } from '../utils/errors';
+
+export type EventFormData = Parameters<typeof createEventFromTemplate>[0];
 
 interface ToastState {
   id: string;
@@ -67,7 +70,7 @@ interface AppContextType {
   activeEventId: string;
   activeEvent: EventModel;
   setActiveEventId: (id: string) => void;
-  createNewEvent: (formData: any) => Promise<void>;
+  createNewEvent: (formData: EventFormData) => Promise<void>;
   updateEvent: (updates: Partial<EventModel>) => Promise<void>;
   setEventDate: (date: string) => Promise<void>;
   seedSampleEventToCloud: () => Promise<void>;
@@ -340,8 +343,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         await firestoreRepo.updateEvent(activeEventId, updates);
         showToast('Event settings saved to Cloud Firestore.', 'success');
-      } catch (err: any) {
-        showToast('Failed to save to Firestore: ' + err.message, 'error');
+      } catch (err: unknown) {
+        showToast('Failed to save to Firestore: ' + getErrorMessage(err), 'error');
       } finally {
         setIsSyncing(false);
       }
@@ -364,7 +367,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const createNewEvent = async (formData: any) => {
+  const createNewEvent = async (formData: EventFormData) => {
     const { event, categories: newCats, tasks: newTasks } = createEventFromTemplate(formData);
 
     if (isCloudActive && user) {
@@ -376,8 +379,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setOnboardingOpen(false);
         setCurrentTab('dashboard');
         showToast(`Celebration "${event.name}" saved to your Cloud Firestore account.`, 'success');
-      } catch (err: any) {
-        showToast('Could not create event in Firestore: ' + err.message, 'error');
+      } catch (err: unknown) {
+        showToast('Could not create event in Firestore: ' + getErrorMessage(err), 'error');
       } finally {
         setIsSyncing(false);
       }
@@ -429,8 +432,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await firestoreRepo.createEvent(seededEvent, seededCategories, seededTasks);
       setCloudActiveEventId(newId);
       showToast('Sample Jaipur Wedding (₹12 Lakh) seeded to your Cloud Firestore account!', 'success');
-    } catch (err: any) {
-      showToast('Failed to seed sample event: ' + err.message, 'error');
+    } catch (err: unknown) {
+      showToast('Failed to seed sample event: ' + getErrorMessage(err), 'error');
     } finally {
       setIsSyncing(false);
     }
@@ -440,8 +443,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isCloudActive) {
       try {
         await firestoreBudget.updateCategory(activeEventId, categoryId, updates);
-      } catch (err: any) {
-        showToast('Failed to update category in Firestore: ' + err.message, 'error');
+      } catch (err: unknown) {
+        showToast('Failed to update category in Firestore: ' + getErrorMessage(err), 'error');
       }
     } else {
       setLocalCategories((prev) =>
@@ -518,8 +521,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             await firestoreVendor.updateQuoteStatus(activeEventId, other.id, 'shortlisted');
           }
         }
-      } catch (err: any) {
-        showToast('Failed to finalize quote in Cloud: ' + err.message, 'error');
+      } catch (err: unknown) {
+        showToast('Failed to finalize quote in Cloud: ' + getErrorMessage(err), 'error');
       }
     } else {
       setLocalVendorQuotes((prev) =>
@@ -591,8 +594,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           subtasks: updatedSubtasks,
           status: newStatus,
         });
-      } catch (err: any) {
-        showToast('Failed to update task in Firestore: ' + err.message, 'error');
+      } catch (err: unknown) {
+        showToast('Failed to update task in Firestore: ' + getErrorMessage(err), 'error');
       }
     } else {
       setLocalTasks((prev) =>
@@ -621,8 +624,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           subtasks: updatedSubtasks,
         });
         showToast(`Task status updated to ${status.replace('_', ' ')}.`, 'info');
-      } catch (err: any) {
-        showToast('Failed to update task in Firestore: ' + err.message, 'error');
+      } catch (err: unknown) {
+        showToast('Failed to update task in Firestore: ' + getErrorMessage(err), 'error');
       }
     } else {
       setLocalTasks((prev) =>
@@ -639,8 +642,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         await firestoreTask.updateTask(activeEventId, taskId, updates);
         showToast('Task details saved to Cloud.', 'success');
-      } catch (err: any) {
-        showToast('Failed to save task: ' + err.message, 'error');
+      } catch (err: unknown) {
+        showToast('Failed to save task: ' + getErrorMessage(err), 'error');
       }
     } else {
       setLocalTasks((prev) =>
@@ -660,8 +663,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         await firestoreTask.addTask(activeEventId, newTask);
         showToast(`Added new task: "${newTask.title}" to Cloud.`, 'success');
-      } catch (err: any) {
-        showToast('Failed to add task: ' + err.message, 'error');
+      } catch (err: unknown) {
+        showToast('Failed to add task: ' + getErrorMessage(err), 'error');
       }
     } else {
       setLocalTasks((prev) => [...prev, newTask]);
@@ -684,8 +687,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           await firestoreTask.addTask(activeEventId, t);
         }
         showToast(`Successfully added ${newTasks.length} tasks to Cloud.`, 'success');
-      } catch (err: any) {
-        showToast('Failed to add tasks to Cloud: ' + err.message, 'error');
+      } catch (err: unknown) {
+        showToast('Failed to add tasks to Cloud: ' + getErrorMessage(err), 'error');
       } finally {
         setIsSyncing(false);
       }
@@ -700,8 +703,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         await firestoreTask.deleteTask(activeEventId, taskId);
         showToast('Task removed from Cloud.', 'info');
-      } catch (err: any) {
-        showToast('Failed to delete task: ' + err.message, 'error');
+      } catch (err: unknown) {
+        showToast('Failed to delete task: ' + getErrorMessage(err), 'error');
       }
     } else {
       setLocalTasks((prev) => prev.filter((t) => t.id !== taskId));
@@ -773,8 +776,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         await firestoreTask.updateTask(activeEventId, taskId, { subtasks: combined });
         showToast('Added 3 granular checklist subtasks to Cloud.', 'success');
-      } catch (err: any) {
-        showToast('Could not expand task in Cloud: ' + err.message, 'error');
+      } catch (err: unknown) {
+        showToast('Could not expand task in Cloud: ' + getErrorMessage(err), 'error');
       }
     } else {
       setLocalTasks((prev) =>
@@ -846,8 +849,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           `Proposal Approved in Cloud! Catering adjusted to ₹${updatedProposal.impactSummary.revisedCateringCost.toLocaleString('en-IN')}, Reserve to ₹${updatedProposal.impactSummary.revisedReserve.toLocaleString('en-IN')}.`,
           'success'
         );
-      } catch (err: any) {
-        showToast('Failed to apply proposal to Firestore: ' + err.message, 'error');
+      } catch (err: unknown) {
+        showToast('Failed to apply proposal to Firestore: ' + getErrorMessage(err), 'error');
       } finally {
         setIsSyncing(false);
       }
@@ -897,8 +900,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         await firestoreVendor.addQuote(activeEventId, newQuote);
         showToast(`Added quotation for "${newQuote.vendorName}" to Cloud.`, 'success');
-      } catch (err: any) {
-        showToast('Could not save quote to Cloud: ' + err.message, 'error');
+      } catch (err: unknown) {
+        showToast('Could not save quote to Cloud: ' + getErrorMessage(err), 'error');
       }
     } else {
       setLocalVendorQuotes((prev) => [...prev, newQuote]);
@@ -914,8 +917,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         await firestoreVendor.updateQuote(activeEventId, quote.id, updated);
         showToast(`Updated quote for "${quote.vendorName}" in Cloud.`, 'success');
-      } catch (err: any) {
-        showToast('Could not update quote in Cloud: ' + err.message, 'error');
+      } catch (err: unknown) {
+        showToast('Could not update quote in Cloud: ' + getErrorMessage(err), 'error');
       }
     } else {
       setLocalVendorQuotes((prev) =>
@@ -930,8 +933,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         await firestoreVendor.deleteQuote(activeEventId, quoteId);
         showToast('Quotation removed from Cloud.', 'info');
-      } catch (err: any) {
-        showToast('Could not delete quote from Cloud: ' + err.message, 'error');
+      } catch (err: unknown) {
+        showToast('Could not delete quote from Cloud: ' + getErrorMessage(err), 'error');
       }
     } else {
       setLocalVendorQuotes((prev) => prev.filter((q) => q.id !== quoteId));
@@ -944,8 +947,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         await firestoreVendor.updateQuoteStatus(activeEventId, id, status);
         showToast(`Quote status marked as ${status} in Cloud.`, 'info');
-      } catch (err: any) {
-        showToast('Could not update quote in Cloud: ' + err.message, 'error');
+      } catch (err: unknown) {
+        showToast('Could not update quote in Cloud: ' + getErrorMessage(err), 'error');
       }
     } else {
       setLocalVendorQuotes((prev) =>

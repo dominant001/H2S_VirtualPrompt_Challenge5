@@ -7,6 +7,7 @@ import {
   AIUsageLogEntry,
 } from '../server/gateway/types';
 import { GatewayTestSuiteReport } from '../server/gateway/tests';
+import { getErrorMessage } from '../utils/errors';
 
 export interface GatewayHealthData {
   status: string;
@@ -58,7 +59,7 @@ export class AIUsageGatewayClient {
       }
 
       return await response.json();
-    } catch (err: any) {
+    } catch (err: unknown) {
       return {
         success: false,
         workflow: payload.workflow,
@@ -67,7 +68,7 @@ export class AIUsageGatewayClient {
         estimatedCostUsd: 0,
         cacheHit: false,
         durationMs: 0,
-        error: err.message || 'Network error reaching AI Usage Gateway',
+        error: getErrorMessage(err) || 'Network error reaching AI Usage Gateway',
         errorCode: 'GEMINI_ERROR',
       };
     }

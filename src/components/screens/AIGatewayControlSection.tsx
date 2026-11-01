@@ -126,8 +126,9 @@ export const AIGatewayControlSection: React.FC = () => {
         );
       }
       refreshData();
-    } catch (err: any) {
-      showToast(`Test suite execution failed: ${err.message}`, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast(`Test suite execution failed: ${message}`, 'error');
     } finally {
       setRunningTests(false);
     }
@@ -147,8 +148,9 @@ export const AIGatewayControlSection: React.FC = () => {
         );
       }
       refreshData();
-    } catch (err: any) {
-      showToast(`Phase 3 test suite failed: ${err.message}`, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast(`Phase 3 test suite failed: ${message}`, 'error');
     } finally {
       setRunningArchitectTests(false);
     }
@@ -168,8 +170,9 @@ export const AIGatewayControlSection: React.FC = () => {
         );
       }
       refreshData();
-    } catch (err: any) {
-      showToast(`Phase 4 budget test suite failed: ${err.message}`, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast(`Phase 4 budget test suite failed: ${message}`, 'error');
     } finally {
       setRunningBudgetTests(false);
     }
@@ -189,8 +192,9 @@ export const AIGatewayControlSection: React.FC = () => {
         );
       }
       refreshData();
-    } catch (err: any) {
-      showToast(`Phase 5 checklist test suite failed: ${err.message}`, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast(`Phase 5 checklist test suite failed: ${message}`, 'error');
     } finally {
       setRunningChecklistTests(false);
     }
@@ -210,8 +214,9 @@ export const AIGatewayControlSection: React.FC = () => {
         );
       }
       refreshData();
-    } catch (err: any) {
-      showToast(`Phase 6 re-planning test suite failed: ${err.message}`, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast(`Phase 6 re-planning test suite failed: ${message}`, 'error');
     } finally {
       setRunningReplanTests(false);
     }
@@ -231,8 +236,9 @@ export const AIGatewayControlSection: React.FC = () => {
         );
       }
       refreshData();
-    } catch (err: any) {
-      showToast(`Phase 7 test suite failed: ${err.message}`, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast(`Phase 7 test suite failed: ${message}`, 'error');
     } finally {
       setRunningVendorTests(false);
     }
@@ -252,8 +258,9 @@ export const AIGatewayControlSection: React.FC = () => {
         );
       }
       refreshData();
-    } catch (err: any) {
-      showToast(`Phase 8 test suite failed: ${err.message}`, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast(`Phase 8 test suite failed: ${message}`, 'error');
     } finally {
       setRunningHardeningTests(false);
     }
@@ -287,8 +294,9 @@ export const AIGatewayControlSection: React.FC = () => {
         showToast(`Gateway rejected request: ${res.error}`, 'error');
       }
       refreshData();
-    } catch (err: any) {
-      showToast(`Gateway execution error: ${err.message}`, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast(`Gateway execution error: ${message}`, 'error');
     } finally {
       setExecutingPrompt(false);
     }
@@ -801,7 +809,7 @@ export const AIGatewayControlSection: React.FC = () => {
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-xs text-[#231530]">{r.name}</div>
                     <div className="text-[11px] text-[#231530]/70 mt-0.5">{r.notes}</div>
-                    {r.data && (
+                    {r.data != null && (
                       <div className="mt-1 font-mono text-[10px] text-neutral-600 bg-white/70 px-2 py-0.5 rounded border border-neutral-200 inline-block">
                         {JSON.stringify(r.data)}
                       </div>
@@ -867,7 +875,7 @@ export const AIGatewayControlSection: React.FC = () => {
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-xs text-[#231530]">{r.name}</div>
                     <div className="text-[11px] text-[#231530]/70 mt-0.5">{r.details}</div>
-                    {r.data && (
+                    {r.data != null && (
                       <div className="mt-1 font-mono text-[10px] text-neutral-600 bg-white/70 px-2 py-0.5 rounded border border-neutral-200 inline-block">
                         {JSON.stringify(r.data)}
                       </div>
@@ -933,7 +941,7 @@ export const AIGatewayControlSection: React.FC = () => {
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-xs text-[#231530]">{r.name}</div>
                     <div className="text-[11px] text-[#231530]/70 mt-0.5">{r.notes}</div>
-                    {r.data && (
+                    {r.data != null && (
                       <div className="mt-1 font-mono text-[10px] text-neutral-600 bg-white/70 px-2 py-0.5 rounded border border-neutral-200 inline-block">
                         {JSON.stringify(r.data)}
                       </div>
@@ -1001,7 +1009,7 @@ export const AIGatewayControlSection: React.FC = () => {
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-xs text-[#231530]">{r.name}</div>
                     <div className="text-[11px] text-[#231530]/70 mt-0.5">{r.notes}</div>
-                    {r.data && (
+                    {r.data != null && (
                       <div className="mt-1 font-mono text-[10px] text-neutral-600 bg-white/70 px-2 py-0.5 rounded border border-neutral-200 inline-block">
                         {JSON.stringify(r.data)}
                       </div>
@@ -1069,7 +1077,7 @@ export const AIGatewayControlSection: React.FC = () => {
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-xs text-[#231530]">{r.name}</div>
                     <div className="text-[11px] text-[#231530]/70 mt-0.5">{r.notes}</div>
-                    {r.data && (
+                    {r.data != null && (
                       <div className="mt-1 font-mono text-[10px] text-neutral-600 bg-white/70 px-2 py-0.5 rounded border border-neutral-200 inline-block">
                         {JSON.stringify(r.data)}
                       </div>

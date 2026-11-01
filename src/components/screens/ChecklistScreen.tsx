@@ -195,12 +195,13 @@ export const ChecklistScreen: React.FC = () => {
       setExpansionData(res);
       // Pre-check non-duplicates
       const initialSelection: Record<number, boolean> = {};
-      res.suggestions.forEach((s: any, idx: number) => {
+      res.suggestions.forEach((s: { isDuplicate?: boolean }, idx: number) => {
         initialSelection[idx] = !s.isDuplicate;
       });
       setSelectedCandidateIndices(initialSelection);
-    } catch (err: any) {
-      showToast('Could not load AI task expansion: ' + err.message, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast('Could not load AI task expansion: ' + message, 'error');
       setExpansionModalOpen(false);
     } finally {
       setExpansionLoading(false);
@@ -211,8 +212,8 @@ export const ChecklistScreen: React.FC = () => {
   const handleImportSelectedAITasks = async () => {
     if (!expansionData) return;
 
-    const toAdd: any[] = [];
-    expansionData.suggestions.forEach((s: any, idx: number) => {
+    const toAdd: Omit<TaskItem, 'id'>[] = [];
+    expansionData.suggestions.forEach((s, idx: number) => {
       if (!selectedCandidateIndices[idx]) return;
       const ownerId = candidateOwners[idx] !== undefined ? candidateOwners[idx] : defaultExpansionOwnerId;
       const assignedMember = teamMembers.find((m) => m.id === ownerId);
@@ -279,8 +280,9 @@ export const ChecklistScreen: React.FC = () => {
       setAuditData(res);
       setAuditBannerDismissed(false);
       showToast(`Checklist audit complete: Found ${res.totalIssues} operational insights.`, 'info');
-    } catch (err: any) {
-      showToast('Failed to audit checklist: ' + err.message, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast('Failed to audit checklist: ' + message, 'error');
     } finally {
       setAuditLoading(false);
     }
@@ -1096,7 +1098,7 @@ export const ChecklistScreen: React.FC = () => {
 
                   {/* Candidate List */}
                   <div className="space-y-3">
-                    {expansionData.suggestions.map((cand: any, idx: number) => {
+                    {expansionData.suggestions.map((cand, idx: number) => {
                       const isChecked = !!selectedCandidateIndices[idx];
                       return (
                         <div

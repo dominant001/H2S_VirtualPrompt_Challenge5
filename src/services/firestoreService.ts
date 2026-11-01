@@ -173,8 +173,8 @@ export class FirestoreEventRepository implements IEventRepository {
     return () => {
       try {
         unsubscribe();
-      } catch (err: any) {
-        if (err?.name !== 'AbortError') {
+      } catch (err: unknown) {
+        if ((err as { name?: string })?.name !== 'AbortError') {
           console.warn('Ignored events unsubscribe warning:', err);
         }
       }
@@ -267,8 +267,8 @@ export class FirestoreBudgetService implements IBudgetService {
     return () => {
       try {
         unsubscribe();
-      } catch (err: any) {
-        if (err?.name !== 'AbortError') {
+      } catch (err: unknown) {
+        if ((err as { name?: string })?.name !== 'AbortError') {
           console.warn('Ignored categories unsubscribe warning:', err);
         }
       }
@@ -342,8 +342,8 @@ export class FirestoreTaskService implements ITaskService {
     return () => {
       try {
         unsubscribe();
-      } catch (err: any) {
-        if (err?.name !== 'AbortError') {
+      } catch (err: unknown) {
+        if ((err as { name?: string })?.name !== 'AbortError') {
           console.warn('Ignored tasks unsubscribe warning:', err);
         }
       }
@@ -425,8 +425,8 @@ export class FirestoreVendorService implements IVendorService {
     return () => {
       try {
         unsubscribe();
-      } catch (err: any) {
-        if (err?.name !== 'AbortError') {
+      } catch (err: unknown) {
+        if ((err as { name?: string })?.name !== 'AbortError') {
           console.warn('Ignored quotes unsubscribe warning:', err);
         }
       }

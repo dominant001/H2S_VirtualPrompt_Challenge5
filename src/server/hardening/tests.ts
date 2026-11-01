@@ -16,7 +16,7 @@ export interface HardeningTestResult {
   name: string;
   passed: boolean;
   notes: string;
-  data?: any;
+  data?: unknown;
 }
 
 export interface HardeningTestSuiteReport {
@@ -64,12 +64,12 @@ export async function runHardeningTestSuite(): Promise<HardeningTestSuiteReport>
         : 'Failed: Event model failed schema or persistence verification.',
       data: { eventId: testEvent.id, ownerId: testEvent.ownerId, budget: testEvent.totalBudget },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'matrix-1-persistence',
       name: 'Matrix 1: New user create Jaipur wedding and persist on reload',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -100,12 +100,12 @@ export async function runHardeningTestSuite(): Promise<HardeningTestSuiteReport>
         isBalanced: analysis.isBalanced,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'matrix-2-budget-math',
       name: 'Matrix 2: Budget ₹12 lakh allocations balance; 200 × ₹900 + ₹20k = ₹2 lakh',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -158,12 +158,12 @@ export async function runHardeningTestSuite(): Promise<HardeningTestSuiteReport>
         rejectedStatus: rejectResult.proposal?.status || 'rejected',
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'matrix-3-replanning-invariants',
       name: 'Matrix 3: Guest count 250 proposal +₹45k; reserve after approved transfer ₹1.35 lakh; rejection leaves unchanged',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -194,12 +194,12 @@ export async function runHardeningTestSuite(): Promise<HardeningTestSuiteReport>
         : 'Failed: Groom micro-tasks missing or lack required timeline offsets.',
       data: { groomTaskCount: groomTasks.length, sampleTask: groomTasks[0]?.title },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'matrix-4-groom-microtasks',
       name: 'Matrix 4: Groom tasks micro-level, progress, dependencies and timeline correct',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -226,12 +226,12 @@ export async function runHardeningTestSuite(): Promise<HardeningTestSuiteReport>
         : 'Failed: Candidate preview mutated existing task state.',
       data: { initialCount, afterCount, candidateCount: candidateTasks.length },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'matrix-5-no-silent-task-addition',
       name: 'Matrix 5: Task expansion preview cannot silently add tasks',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -241,7 +241,7 @@ export async function runHardeningTestSuite(): Promise<HardeningTestSuiteReport>
   try {
     const quotes = INITIAL_VENDOR_QUOTES;
     const hasSourceTypes = quotes.every((q) => Boolean(q.sourceType) && Boolean(q.sourceLabel));
-    const noAutoVerified = quotes.every((q) => q.status !== ('verified' as any));
+    const noAutoVerified = quotes.every((q) => (q.status as string) !== 'verified');
 
     const passed = hasSourceTypes && noAutoVerified;
 
@@ -254,12 +254,12 @@ export async function runHardeningTestSuite(): Promise<HardeningTestSuiteReport>
         : 'Failed: Missing source types or quote automatically marked as verified.',
       data: { quoteCount: quotes.length, sourceTypes: quotes.map((q) => q.sourceType) },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'matrix-6-quote-provenance',
       name: 'Matrix 6: User-entered vendor quote differs visually from price reference; "verified" only after verified process',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -291,12 +291,12 @@ export async function runHardeningTestSuite(): Promise<HardeningTestSuiteReport>
         : 'Failed: Attacker user was granted access across account boundaries.',
       data: { accessDenied: !accessCheck.allowed, errorMsg: accessCheck.error },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'matrix-7-cross-account-enforcement',
       name: 'Matrix 7: Cross-account read/write denied',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -325,12 +325,12 @@ export async function runHardeningTestSuite(): Promise<HardeningTestSuiteReport>
         : 'Failed: Degraded fallback lacked clear simulation markers.',
       data: { simulated: degradedResponse.simulated, modelId: degradedResponse.modelId },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'matrix-8-degraded-mode-labeling',
       name: 'Matrix 8: No real AI? Display clear degraded mode, no invented success claims',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -360,12 +360,12 @@ export async function runHardeningTestSuite(): Promise<HardeningTestSuiteReport>
         : 'Failed: PDF output or Places discovery failed verification.',
       data: { pdfPages: pdfDoc.getNumberOfPages(), placesIsLive: placesSearch.isLive },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'matrix-9-real-exports-and-discovery',
       name: 'Matrix 9: PDF output, vendor discovery, voice or image flows only where actually enabled',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -392,12 +392,12 @@ export async function runHardeningTestSuite(): Promise<HardeningTestSuiteReport>
         : 'Failed: Quality invariant check failed.',
       data: responsiveCheck,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'matrix-10-accessibility-and-quality',
       name: 'Matrix 10: Mobile navigation, accessible controls, no console/runtime errors',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 

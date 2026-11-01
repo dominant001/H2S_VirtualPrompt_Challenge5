@@ -45,7 +45,7 @@ export class GeminiClient {
     routeConfig: ModelRouteConfig,
     prompt: string,
     systemInstruction?: string
-  ): Promise<{ text: string; rawResponse?: any; simulated: boolean }> {
+  ): Promise<{ text: string; rawResponse?: unknown; simulated: boolean }> {
     // Re-check client in case environment variable was injected dynamically
     if (!this.client) {
       this.initClient();
@@ -61,7 +61,7 @@ export class GeminiClient {
     }
 
     // Build configuration
-    const config: Record<string, any> = {};
+    const config: Record<string, unknown> = {};
     if (systemInstruction) {
       config.systemInstruction = systemInstruction;
     }
@@ -76,7 +76,7 @@ export class GeminiClient {
     const requestPromise = this.client.models.generateContent({
       model: routeConfig.primaryModelId,
       contents: prompt,
-      config: Object.keys(config).length > 0 ? config : undefined,
+      config: Object.keys(config).length > 0 ? (config as Record<string, unknown> as Parameters<typeof this.client.models.generateContent>[0]['config']) : undefined,
     });
 
     const timeoutPromise = new Promise<never>((_, reject) => {
@@ -93,8 +93,8 @@ export class GeminiClient {
         rawResponse: response,
         simulated: false,
       };
-    } catch (error: any) {
-      console.warn('[GeminiClient] Gemini API call notice:', error?.message || error);
+    } catch (error: unknown) {
+      console.warn('[GeminiClient] Gemini API call notice:', error instanceof Error ? error.message : error);
       throw error;
     }
   }

@@ -145,6 +145,16 @@ export const SAMPLE_JAIPUR_DIRECTORY: Record<string, PlacesVendorResult[]> = {
   ],
 };
 
+interface RawPlaceItem {
+  id?: string;
+  displayName?: { text?: string };
+  formattedAddress?: string;
+  rating?: number;
+  userRatingCount?: number;
+  websiteUri?: string;
+  internationalPhoneNumber?: string;
+}
+
 export class PlacesAdapter {
   /**
    * Discovers vendors by city, category, and radius.
@@ -190,7 +200,7 @@ export class PlacesAdapter {
         if (response.ok) {
           const data = await response.json();
           if (data.places && Array.isArray(data.places) && data.places.length > 0) {
-            const placesResults: PlacesVendorResult[] = data.places.map((p: any) => ({
+            const placesResults: PlacesVendorResult[] = data.places.map((p: RawPlaceItem) => ({
               id: p.id || `live-place-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
               name: p.displayName?.text || 'Vendor Business',
               category,

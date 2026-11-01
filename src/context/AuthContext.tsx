@@ -7,6 +7,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db, googleProvider, testConnection } from '../services/firebase';
+import { getErrorMessage } from '../utils/errors';
 
 interface AuthContextType {
   user: User | null;
@@ -71,15 +72,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAuthError(null);
     try {
       await signInWithPopup(auth, googleProvider);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Google Sign-in error:', err);
       let message = 'Failed to sign in with Google.';
-      if (err.code === 'auth/popup-blocked') {
+      const firebaseError = err as { code?: string; message?: string };
+      if (firebaseError.code === 'auth/popup-blocked') {
         message = 'Sign-in popup was blocked by your browser. Please allow popups for this site.';
-      } else if (err.code === 'auth/cancelled-popup-request' || err.code === 'auth/popup-closed-by-user') {
+      } else if (firebaseError.code === 'auth/cancelled-popup-request' || firebaseError.code === 'auth/popup-closed-by-user') {
         message = 'Sign-in popup was closed before completing.';
-      } else if (err.message) {
-        message = err.message;
+      } else if (firebaseError.code === 'auth/unauthorized-domain') {
+        message = 'This domain is not authorized for Google sign-in in Firebase Console. Please add it in Firebase Authentication Settings.';
+      } else if (firebaseError.code === 'auth/operation-not-allowed') {
+        message = 'Google Sign-in provider is not enabled in Firebase Console.';
+      } else if (firebaseError.message) {
+        message = firebaseError.message;
       }
       setAuthError(message);
       throw err;
@@ -93,9 +99,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       // Return to demo mode so user can continue safely exploring
       setDemoModeState(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Sign-out error:', err);
-      setAuthError(err.message || 'Failed to sign out.');
+      setAuthError(getErrorMessage(err) || 'Failed to sign out.');
     }
   };
 

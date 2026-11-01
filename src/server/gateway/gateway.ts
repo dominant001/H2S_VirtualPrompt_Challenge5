@@ -8,6 +8,7 @@ import { modelRouter } from './modelRouter';
 import { rateLimitService } from './rateLimitService';
 import { tokenBudgetService } from './tokenBudgetService';
 import {
+  AIWorkflow,
   GatewayExecuteResponse,
   GatewayRequestPayload,
   GatewayUserContext,
@@ -238,12 +239,13 @@ export class AIUsageGateway {
         }
 
         // 8. Gemini API Invocation
-        let genResult: { text: string; rawResponse?: any; simulated: boolean };
+        let genResult: { text: string; rawResponse?: unknown; simulated: boolean };
         try {
           genResult = await this.client.generateText(routeConfig, prompt, systemInstruction);
-        } catch (genError: any) {
+        } catch (genError: unknown) {
           // Log failed operation
           const durationMs = Date.now() - startTime;
+          const genErrorMessage = genError instanceof Error ? genError.message : String(genError);
           this.costGuard.recordExpense(0, false, false);
           this.tracker.logRequest({
             userId: user.userId,
@@ -257,10 +259,10 @@ export class AIUsageGateway {
             timestamp: new Date().toISOString(),
             durationMs,
             cacheHit: false,
-            errorMessage: genError.message || 'Gemini error',
+            errorMessage: genErrorMessage,
           });
 
-          let friendlyError = genError.message || 'Upstream provider error';
+          let friendlyError = genErrorMessage;
           if (
             friendlyError.includes('402') ||
             friendlyError.includes('prepayment credits') ||
@@ -289,7 +291,7 @@ export class AIUsageGateway {
 
         // 9. Token Accounting & Cost Calculation
         const tokenUsage = this.tokenBudget.extractUsageReport(
-          genResult.rawResponse,
+          genResult.rawResponse as Parameters<typeof this.tokenBudget.extractUsageReport>[0],
           prompt,
           genResult.text
         );
@@ -358,7 +360,7 @@ export class AIUsageGateway {
   }
 
   private errorResponse(
-    workflow: any,
+    workflow: AIWorkflow,
     errorCode: GatewayExecuteResponse['errorCode'],
     error: string,
     startTime: number,

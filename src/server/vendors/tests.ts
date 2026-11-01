@@ -15,7 +15,7 @@ export interface Phase7TestResult {
   name: string;
   passed: boolean;
   notes: string;
-  data?: any;
+  data?: unknown;
 }
 
 export interface Phase7TestSuiteReport {
@@ -58,12 +58,12 @@ export async function runVendorTestSuite(): Promise<Phase7TestSuiteReport> {
         disclaimersEnforced: allHaveClarification,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'test-a-places-discovery',
       name: 'Test A: Places results clearly distinguish live from demo; no fabricated per-plate quote/availability',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -129,12 +129,12 @@ export async function runVendorTestSuite(): Promise<Phase7TestSuiteReport> {
         deltaINR,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'test-b-user-quote-management',
       name: 'Test B: Add, edit and compare real user-entered quotes with inclusions and expiration',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -185,12 +185,12 @@ Valid until: 2026-12-31
         citationsCount: extracted.sourceReferences.length,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'test-c-gemini-quote-extraction',
       name: 'Test C: Gemini quote extraction offers editable preview and source reference, and never auto-confirms a booking',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -247,12 +247,12 @@ Valid until: 2026-12-31
         hindiShlokaPresent: Boolean(confirmedInvitation.shlokaOrBlessing),
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'test-d-invitation-inspiration',
       name: 'Test D: Inspiration generates/edits invitation text without fake event dates; demo works if generation unavailable',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -286,12 +286,12 @@ Valid until: 2026-12-31
         sizeBytes: pdfSize,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'test-e-pdf-export-engine',
       name: 'Test E: Downloaded PDF contains current real event values, disclaimers and valid formatting',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -331,12 +331,12 @@ Valid until: 2026-12-31
         invitationGenerated: Boolean(inviteOffline.title),
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'test-f-graceful-fallback',
       name: 'Test F: All optional integrations fail gracefully without breaking core budgeting/checklist experience',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 

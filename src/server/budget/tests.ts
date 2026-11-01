@@ -13,7 +13,7 @@ export interface Phase4TestReport {
   name: string;
   passed: boolean;
   notes: string;
-  data?: any;
+  data?: unknown;
 }
 
 export async function runBudgetTestSuite(): Promise<{
@@ -50,8 +50,8 @@ export async function runBudgetTestSuite(): Promise<{
         : `Validation failed: total=${validation.totalAllocatedINR}, reserve=${reserveAllocated}`,
       data: { totalAllocated: validation.totalAllocatedINR, reserve: reserveAllocated },
     });
-  } catch (err: any) {
-    results.push({ id: 'TEST_A', name: 'Test A', passed: false, notes: err.message });
+  } catch (err: unknown) {
+    results.push({ id: 'TEST_A', name: 'Test A', passed: false, notes: err instanceof Error ? err.message : String(err) });
   }
 
   // TEST B: Catering baseline: 200 × ₹900 + ₹20,000 = ₹2,00,000
@@ -74,8 +74,8 @@ export async function runBudgetTestSuite(): Promise<{
         : `Mismatch: expected ${expectedCost}, got ${resultB.totalCostINR}`,
       data: { chargeablePlates: resultB.chargeablePlates, totalCostINR: resultB.totalCostINR },
     });
-  } catch (err: any) {
-    results.push({ id: 'TEST_B', name: 'Test B', passed: false, notes: err.message });
+  } catch (err: unknown) {
+    results.push({ id: 'TEST_B', name: 'Test B', passed: false, notes: err instanceof Error ? err.message : String(err) });
   }
 
   // TEST C: 250 guests with unchanged assumptions => ₹2,45,000; +₹45,000
@@ -99,8 +99,8 @@ export async function runBudgetTestSuite(): Promise<{
         : `Mismatch: expected ${expectedCost}, got ${resultC.totalCostINR}`,
       data: { totalCostINR: resultC.totalCostINR, delta: difference },
     });
-  } catch (err: any) {
-    results.push({ id: 'TEST_C', name: 'Test C', passed: false, notes: err.message });
+  } catch (err: unknown) {
+    results.push({ id: 'TEST_C', name: 'Test C', passed: false, notes: err instanceof Error ? err.message : String(err) });
   }
 
   // TEST D: Invalid negative guest/rate rejected; tax inclusion respected; venue+catering bundle not double counted
@@ -153,8 +153,8 @@ export async function runBudgetTestSuite(): Promise<{
         : `Checks: negGuest=${negativeGuestsRejected}, negRate=${negativeRateRejected}, tax=${taxIncludedRespected}, bundle=${bundleNotDoubleCounted}`,
       data: { negativeGuestsRejected, negativeRateRejected, taxIncludedRespected, bundleNotDoubleCounted },
     });
-  } catch (err: any) {
-    results.push({ id: 'TEST_D', name: 'Test D', passed: false, notes: err.message });
+  } catch (err: unknown) {
+    results.push({ id: 'TEST_D', name: 'Test D', passed: false, notes: err instanceof Error ? err.message : String(err) });
   }
 
   // TEST E: All sample data visibly marked modelled; a manually entered quote isn't labeled verified
@@ -197,8 +197,8 @@ export async function runBudgetTestSuite(): Promise<{
         : `Failed: sampleModelled=${allSampleModelled}, userQuoteUnverified=${isUserQuoteUnverified}`,
       data: { allSampleModelled, isUserQuoteUnverified },
     });
-  } catch (err: any) {
-    results.push({ id: 'TEST_E', name: 'Test E', passed: false, notes: err.message });
+  } catch (err: unknown) {
+    results.push({ id: 'TEST_E', name: 'Test E', passed: false, notes: err instanceof Error ? err.message : String(err) });
   }
 
   // TEST F: Gemini recommendations are numerically consistent with tool response; never change approved Firestore allocations
@@ -234,8 +234,8 @@ export async function runBudgetTestSuite(): Promise<{
         : `Failed: toolCost=${toolCost}, containsFigure=${advisoryContainsToolFigure}, unmutated=${persistenceNotUnilaterallyMutated}`,
       data: { toolCost, advisoryContainsToolFigure, persistenceNotUnilaterallyMutated },
     });
-  } catch (err: any) {
-    results.push({ id: 'TEST_F', name: 'Test F', passed: false, notes: err.message });
+  } catch (err: unknown) {
+    results.push({ id: 'TEST_F', name: 'Test F', passed: false, notes: err instanceof Error ? err.message : String(err) });
   }
 
   const passCount = results.filter((r) => r.passed).length;

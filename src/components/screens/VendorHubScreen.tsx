@@ -101,8 +101,9 @@ export const VendorHubScreen: React.FC = () => {
     try {
       const data = await vendorClient.searchPlacesVendors(searchCity, searchCategory, searchRadius);
       setPlacesData(data);
-    } catch (err: any) {
-      showToast('Could not fetch directory: ' + err.message, 'warning');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast('Could not fetch directory: ' + message, 'warning');
     } finally {
       setPlacesLoading(false);
     }
@@ -135,8 +136,9 @@ export const VendorHubScreen: React.FC = () => {
         `AI Extracted quote figures with ${(candidate.confidence * 100).toFixed(0)}% confidence. Review below.`,
         'success'
       );
-    } catch (err: any) {
-      showToast('Quote extraction error: ' + err.message, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast('Quote extraction error: ' + message, 'error');
     } finally {
       setExtracting(false);
     }
@@ -209,8 +211,9 @@ export const VendorHubScreen: React.FC = () => {
         teamMembers
       );
       showToast('Master event brief PDF downloaded successfully!', 'success');
-    } catch (err: any) {
-      showToast('Could not generate PDF: ' + err.message, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast('Could not generate PDF: ' + message, 'error');
     }
   };
 

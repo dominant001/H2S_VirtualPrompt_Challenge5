@@ -161,8 +161,9 @@ export const OnboardingWizardModal: React.FC = () => {
       if (response.notice) {
         setNotice(response.notice);
       }
-    } catch (err: any) {
-      showToast('Could not process with architect: ' + err.message, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast('Could not process with architect: ' + message, 'error');
     } finally {
       setIsProcessing(false);
     }

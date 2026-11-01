@@ -86,19 +86,21 @@ Do not calculate new numbers; use only the figures from the tool output above.
       );
 
       if (response.success && response.text) {
+        if (response.text.includes('Demo simulation')) {
+          return this.generateSimulatedAdvisory(analysis, scenario);
+        }
         return {
           explanation: response.text,
           analysis,
-          simulated: response.text.includes('Demo simulation'),
-          notice: response.text.includes('Demo simulation')
-            ? 'Demo simulation — Gemini integration comes later. (API key not configured on server or credits depleted)'
-            : undefined,
+          simulated: false,
+          notice: undefined,
         };
       } else {
         return this.generateSimulatedAdvisory(analysis, scenario);
       }
-    } catch (err: any) {
-      console.warn('[BudgetAdvisor] Gateway call failed, running deterministic simulation fallback:', err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn('[BudgetAdvisor] Gateway call failed, running deterministic simulation fallback:', message);
       return this.generateSimulatedAdvisory(analysis, scenario);
     }
   }

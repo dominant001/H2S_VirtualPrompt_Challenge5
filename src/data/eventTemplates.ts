@@ -12,6 +12,7 @@ export function createEventFromTemplate(data: {
   eventDate?: string;
   venueType: string;
   functionCount: number;
+  accommodationNeeded?: boolean;
 }): { event: EventModel; categories: BudgetCategory[]; tasks: TaskItem[] } {
   const eventId = `event-${Date.now()}`;
   const { name, type, city, guestCount, totalBudget, foodPreference, tier, eventDate, venueType, functionCount } = data;

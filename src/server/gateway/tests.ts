@@ -49,13 +49,13 @@ export async function runGatewayTestSuite(): Promise<GatewayTestSuiteReport> {
         message: 'Passed successfully',
         durationMs: Date.now() - t0,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       results.push({
         id,
         name,
         category,
         passed: false,
-        message: err.message || String(err),
+        message: err instanceof Error ? err.message : String(err),
         durationMs: Date.now() - t0,
       });
     }

@@ -109,9 +109,10 @@ Output ONLY a JSON block conforming to the system schema.
         console.warn('[EventArchitect] Gateway returned unfulfilled result, running rule-based simulation fallback:', gatewayResponse.error);
         return this.generateSimulatedIntake(latestUserMessage, baseDraft, gatewayResponse.error);
       }
-    } catch (err: any) {
-      console.warn('[EventArchitect] Exception caught in processMessage, activating graceful fallback:', err.message);
-      return this.generateSimulatedIntake(latestUserMessage, baseDraft, err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn('[EventArchitect] Exception caught in processMessage, activating graceful fallback:', message);
+      return this.generateSimulatedIntake(latestUserMessage, baseDraft, message);
     }
   }
 

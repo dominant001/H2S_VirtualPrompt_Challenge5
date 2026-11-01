@@ -23,6 +23,7 @@ import {
   Unlock,
 } from 'lucide-react';
 import { BudgetEngine, SAMPLE_JAIPUR_EVIDENCE } from '../../domain/budgetEngine';
+import { BudgetCategory } from '../../types';
 import { budgetIntelligenceClient } from '../../services/budgetIntelligenceClient';
 import { BudgetAnalysisResult, PricingEvidence } from '../../types';
 
@@ -58,12 +59,12 @@ export const BudgetStudioScreen: React.FC = () => {
 
   // Payment / Advance Lock Modal State
   const [paymentModalOpen, setPaymentModalOpen] = useState<boolean>(false);
-  const [selectedPaymentCategory, setSelectedPaymentCategory] = useState<any>(null);
+  const [selectedPaymentCategory, setSelectedPaymentCategory] = useState<BudgetCategory | null>(null);
   const [paymentInputAmount, setPaymentInputAmount] = useState<number>(0);
   const [paymentLockToggle, setPaymentLockToggle] = useState<boolean>(true);
   const [paymentNote, setPaymentNote] = useState<string>('');
 
-  const openPaymentModal = (cat: any) => {
+  const openPaymentModal = (cat: BudgetCategory) => {
     setSelectedPaymentCategory(cat);
     setPaymentInputAmount(cat.paid || 0);
     setPaymentLockToggle(cat.isPaidLocked ?? true);
@@ -170,8 +171,9 @@ export const BudgetStudioScreen: React.FC = () => {
       if (res.notice) {
         setAdvisoryNotice(res.notice);
       }
-    } catch (err: any) {
-      showToast('Could not fetch AI budget advisory: ' + err.message, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast('Could not fetch AI budget advisory: ' + message, 'error');
     } finally {
       setLoadingAdvisory(false);
     }
@@ -204,8 +206,9 @@ export const BudgetStudioScreen: React.FC = () => {
       });
       setQuoteModalOpen(false);
       showToast(`Logged quote from "${newQuoteData.vendorName}". Tagged as USER_QUOTE (unverified).`, 'success');
-    } catch (err: any) {
-      showToast('Could not save quote: ' + err.message, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast('Could not save quote: ' + message, 'error');
     }
   };
 

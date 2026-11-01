@@ -60,8 +60,9 @@ export const SettingsScreen: React.FC = () => {
         teamMembers
       );
       showToast('Master event brief PDF downloaded successfully!', 'success');
-    } catch (err: any) {
-      showToast('Could not generate PDF: ' + (err?.message || 'Unknown error'), 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast('Could not generate PDF: ' + message, 'error');
     }
   };
 

@@ -44,8 +44,8 @@ export async function runArchitectTestSuite(): Promise<{
         : `Extracted mismatch: city=${d.city}, guests=${d.guestCount}, budget=${d.budgetINR}, food=${d.foodPreference}`,
       extracted: { city: d.city, guestCount: d.guestCount, budgetINR: d.budgetINR, foodPreference: d.foodPreference },
     });
-  } catch (err: any) {
-    results.push({ name: "Test A", passed: false, notes: err.message });
+  } catch (err: unknown) {
+    results.push({ name: "Test A", passed: false, notes: err instanceof Error ? err.message : String(err) });
   }
 
   // TEST B: Form Edit & Confirmation Invariant
@@ -70,8 +70,8 @@ export async function runArchitectTestSuite(): Promise<{
         : "Draft did not respect form mutation.",
       extracted: { guestCount: editedDraft.guestCount, budgetINR: editedDraft.budgetINR, title: editedDraft.title },
     });
-  } catch (err: any) {
-    results.push({ name: "Test B", passed: false, notes: err.message });
+  } catch (err: unknown) {
+    results.push({ name: "Test B", passed: false, notes: err instanceof Error ? err.message : String(err) });
   }
 
   // TEST C: Date Uncertainty / Null Date Boundary (Never fabricate countdown)
@@ -91,8 +91,8 @@ export async function runArchitectTestSuite(): Promise<{
         : `Failed: eventDate was fabricated as ${d.eventDate}`,
       extracted: { hasExactDate: d.hasExactDate, eventDate: d.eventDate, eventDateWindow: d.eventDateWindow },
     });
-  } catch (err: any) {
-    results.push({ name: "Test C", passed: false, notes: err.message });
+  } catch (err: unknown) {
+    results.push({ name: "Test C", passed: false, notes: err instanceof Error ? err.message : String(err) });
   }
 
   // TEST D: Hindi Intent Handling (Bilingual, no currency confusion)
@@ -116,8 +116,8 @@ export async function runArchitectTestSuite(): Promise<{
         : `Mismatch: city=${d.city}, guests=${d.guestCount}, budget=${d.budgetINR}`,
       extracted: { city: d.city, guestCount: d.guestCount, budgetINR: d.budgetINR, foodPreference: d.foodPreference },
     });
-  } catch (err: any) {
-    results.push({ name: "Test D", passed: false, notes: err.message });
+  } catch (err: unknown) {
+    results.push({ name: "Test D", passed: false, notes: err instanceof Error ? err.message : String(err) });
   }
 
   // TEST E: Malformed JSON / Error Recovery & Labeled Mock Fallback
@@ -149,8 +149,8 @@ export async function runArchitectTestSuite(): Promise<{
         ? "Recovered gracefully from malformed text and produced labeled simulated output."
         : "Failed recovery test.",
     });
-  } catch (err: any) {
-    results.push({ name: "Test E", passed: false, notes: err.message });
+  } catch (err: unknown) {
+    results.push({ name: "Test E", passed: false, notes: err instanceof Error ? err.message : String(err) });
   }
 
   // TEST F: Read-Only Draft Boundary (No unilateral database mutations or fake bookings)
@@ -158,8 +158,8 @@ export async function runArchitectTestSuite(): Promise<{
     const draft = eventArchitectService.getInitialDraft();
     // Verify draft does not contain confirmed booking IDs or unilateral contract locks
     const hasUnilateralBookings =
-      (draft as any).confirmedVendorBookings !== undefined ||
-      (draft as any).signedContracts !== undefined;
+      (draft as unknown as Record<string, unknown>).confirmedVendorBookings !== undefined ||
+      (draft as unknown as Record<string, unknown>).signedContracts !== undefined;
     const passed = !hasUnilateralBookings;
 
     results.push({
@@ -169,8 +169,8 @@ export async function runArchitectTestSuite(): Promise<{
         ? "Draft remains purely advisory until user initiates explicit save transaction."
         : "Draft contained unilateral booking mutations.",
     });
-  } catch (err: any) {
-    results.push({ name: "Test F", passed: false, notes: err.message });
+  } catch (err: unknown) {
+    results.push({ name: "Test F", passed: false, notes: err instanceof Error ? err.message : String(err) });
   }
 
   const passCount = results.filter((r) => r.passed).length;

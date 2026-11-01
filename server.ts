@@ -19,7 +19,16 @@ import { QuoteExtractor } from './src/server/vendors/quoteExtractor';
 import { InvitationAdvisor } from './src/server/inspiration/invitationAdvisor';
 import { runVendorTestSuite } from './src/server/vendors/tests';
 import { runHardeningTestSuite } from './src/server/hardening/tests';
+import { getErrorMessage } from './src/utils/errors';
 import crypto from 'crypto';
+
+declare global {
+  namespace Express {
+    interface Request {
+      requestId?: string;
+    }
+  }
+}
 
 dotenv.config();
 
@@ -41,7 +50,7 @@ async function startServer() {
     const start = Date.now();
     const requestId = (req.headers['x-request-id'] as string) || crypto.randomUUID();
     res.setHeader('x-request-id', requestId);
-    (req as any).requestId = requestId;
+    req.requestId = requestId;
 
     res.on('finish', () => {
       const durationMs = Date.now() - start;
@@ -118,11 +127,11 @@ async function startServer() {
       const authHeader = req.headers.authorization || 'Bearer demo-user-guest';
       const result = await aiUsageGateway.execute(req.body, undefined, authHeader);
       res.json(result);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[API Gateway Error]:', err);
       res.status(500).json({
         success: false,
-        error: err.message || 'Internal Gateway Exception',
+        error: getErrorMessage(err) || 'Internal Gateway Exception',
         errorCode: 'GEMINI_ERROR',
       });
     }
@@ -135,7 +144,7 @@ async function startServer() {
       const authHeader = req.headers.authorization || 'Bearer demo-user-guest';
       const result = await eventArchitectService.processMessage(messages || [], currentDraft, authHeader);
       res.json(result);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Event Intake API Error]:', err);
       res.status(500).json({
         replyText: 'Sorry, I encountered an issue updating your draft.',
@@ -143,7 +152,7 @@ async function startServer() {
         followUpQuestions: ['Retry with standard wedding', 'Switch to manual form'],
         isComplete: false,
         simulated: true,
-        error: err.message,
+        error: getErrorMessage(err),
       });
     }
   });
@@ -153,11 +162,11 @@ async function startServer() {
     try {
       const report = await runArchitectTestSuite();
       res.json(report);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Architect Test Suite Error]:', err);
       res.status(500).json({
         allPassed: false,
-        error: err.message,
+        error: getErrorMessage(err),
       });
     }
   });
@@ -168,9 +177,9 @@ async function startServer() {
       const { event, categories, scenario } = req.body;
       const analysis = BudgetEngine.getBudgetAnalysis(event, categories || [], scenario);
       res.json(analysis);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Budget Analysis API Error]:', err);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: getErrorMessage(err) });
     }
   });
 
@@ -186,9 +195,9 @@ async function startServer() {
         authHeader
       );
       res.json(advisory);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Budget Advisory API Error]:', err);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: getErrorMessage(err) });
     }
   });
 
@@ -197,11 +206,11 @@ async function startServer() {
     try {
       const report = await runBudgetTestSuite();
       res.json(report);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Budget Test Suite Error]:', err);
       res.status(500).json({
         allPassed: false,
-        error: err.message,
+        error: getErrorMessage(err),
       });
     }
   });
@@ -218,9 +227,9 @@ async function startServer() {
         authHeader
       );
       res.json(result);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Checklist Expand API Error]:', err);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: getErrorMessage(err) });
     }
   });
 
@@ -235,9 +244,9 @@ async function startServer() {
         authHeader
       );
       res.json(result);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Checklist Audit API Error]:', err);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: getErrorMessage(err) });
     }
   });
 
@@ -246,11 +255,11 @@ async function startServer() {
     try {
       const report = await runChecklistTestSuite();
       res.json(report);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Checklist Test Suite Error]:', err);
       res.status(500).json({
         allPassed: false,
-        error: err.message,
+        error: getErrorMessage(err),
       });
     }
   });
@@ -260,11 +269,11 @@ async function startServer() {
     try {
       const report = await runGatewayTestSuite();
       res.json(report);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Gateway Test Suite Error]:', err);
       res.status(500).json({
         success: false,
-        error: err.message || 'Failed to execute test suite',
+        error: getErrorMessage(err) || 'Failed to execute test suite',
       });
     }
   });
@@ -291,12 +300,12 @@ async function startServer() {
       }
 
       res.json(intentResult);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Re-planning Intent Error]:', err);
       res.status(500).json({
         intent: 'CLARIFICATION_NEEDED',
         confidence: 0,
-        explanation: 'Failed to parse re-planning intent: ' + err.message,
+        explanation: 'Failed to parse re-planning intent: ' + getErrorMessage(err),
         extractedParameters: {},
       });
     }
@@ -314,9 +323,9 @@ async function startServer() {
         idempotencyKey
       );
       res.json(proposal);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Create Proposal Error]:', err);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: getErrorMessage(err) });
     }
   });
 
@@ -350,12 +359,12 @@ async function startServer() {
         { selectedTaskIds, alternativeId }
       );
       res.json(result);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Approve Proposal Error]:', err);
       res.status(500).json({
         success: false,
         error: 'INTERNAL_ERROR',
-        message: err.message,
+        message: getErrorMessage(err),
       });
     }
   });
@@ -366,11 +375,11 @@ async function startServer() {
       const { proposalId, reason, userContext } = req.body;
       const result = replanService.rejectProposal(proposalId, reason, userContext);
       res.json(result);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Reject Proposal Error]:', err);
       res.status(500).json({
         success: false,
-        message: err.message,
+        message: getErrorMessage(err),
       });
     }
   });
@@ -380,11 +389,11 @@ async function startServer() {
     try {
       const report = await runReplanningTestSuite();
       res.json(report);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Replanning Test Suite Error]:', err);
       res.status(500).json({
         allPassed: false,
-        error: err.message,
+        error: getErrorMessage(err),
       });
     }
   });
@@ -397,9 +406,9 @@ async function startServer() {
       const radiusKm = Number(req.query.radiusKm) || 25;
       const results = await PlacesAdapter.searchVendors(city, category, radiusKm);
       res.json(results);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Vendors Search Error]:', err);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: getErrorMessage(err) });
     }
   });
 
@@ -419,9 +428,9 @@ async function startServer() {
         authHeader,
       });
       res.json(candidate);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Quote Extraction Error]:', err);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: getErrorMessage(err) });
     }
   });
 
@@ -443,9 +452,9 @@ async function startServer() {
         authHeader,
       });
       res.json(invitation);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Generate Invitation Error]:', err);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: getErrorMessage(err) });
     }
   });
 
@@ -455,9 +464,9 @@ async function startServer() {
       const { event } = req.body;
       const proposal = InvitationAdvisor.generateSponsorProposal(event);
       res.json(proposal);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Sponsor Proposal Error]:', err);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: getErrorMessage(err) });
     }
   });
 
@@ -466,11 +475,11 @@ async function startServer() {
     try {
       const report = await runVendorTestSuite();
       res.json(report);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Vendor Test Suite Error]:', err);
       res.status(500).json({
         allPassed: false,
-        error: err.message,
+        error: getErrorMessage(err),
       });
     }
   });
@@ -480,11 +489,11 @@ async function startServer() {
     try {
       const report = await runHardeningTestSuite();
       res.json(report);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Hardening Test Suite Error]:', err);
       res.status(500).json({
         allPassed: false,
-        error: err.message,
+        error: getErrorMessage(err),
       });
     }
   });

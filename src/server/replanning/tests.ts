@@ -15,7 +15,7 @@ export interface ReplanTestResult {
   name: string;
   passed: boolean;
   notes: string;
-  data?: any;
+  data?: unknown;
 }
 
 export interface ReplanTestSuiteReport {
@@ -104,12 +104,12 @@ export async function runReplanningTestSuite(): Promise<ReplanTestSuiteReport> {
         proposalApplied: proposal.applied,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'test-a-preview-immutability',
       name: 'Test A: Preview alone makes NO data changes',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -151,12 +151,12 @@ export async function runReplanningTestSuite(): Promise<ReplanTestSuiteReport> {
         guestCount: event.guestCount,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'test-b-reject-immutability',
       name: 'Test B: Cancel/reject makes NO data changes',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -222,12 +222,12 @@ export async function runReplanningTestSuite(): Promise<ReplanTestSuiteReport> {
         isBalanced: validation.isValid,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'test-c-approve-reserve-math',
       name: 'Test C: Approve reserve option transfers exactly ₹45,000, preserves ₹12L total',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -289,12 +289,12 @@ export async function runReplanningTestSuite(): Promise<ReplanTestSuiteReport> {
         warningsVerified: unverifiedNoticePresent,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'test-d-task-impact-selection',
       name: 'Test D: Task impact suggestions are visible and only selected modifications apply',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -368,12 +368,12 @@ export async function runReplanningTestSuite(): Promise<ReplanTestSuiteReport> {
         cateringAllocated: replayedApproval.updatedCategories.find((c) => c.name.toLowerCase().includes('catering'))?.allocated,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'test-e-concurrency-idempotency',
       name: 'Test E: Concurrent edits / replayed approvals do not duplicate allocations',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
@@ -424,12 +424,12 @@ export async function runReplanningTestSuite(): Promise<ReplanTestSuiteReport> {
         clarificationRequested,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     results.push({
       id: 'test-f-governance-security',
       name: 'Test F: Gemini cannot bypass authorization, calculations, approvals or evidence labeling',
       passed: false,
-      notes: `Error: ${err.message}`,
+      notes: `Error: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
 
